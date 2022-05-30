@@ -5,7 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/signer/v4"
+	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type Client struct {
@@ -29,8 +33,40 @@ type ResourceServerUpdateRequest struct {
 	Scopes     []Scope
 }
 
+// signedRequest sends a request to our endpoint with AWS Signature V4.
+// This is how we authenticate with the API.
+func signedRequest(request *http.Request) (*http.Response, error) {
+	creds := credentials.NewEnvCredentials()
+	signer := v4.NewSigner(creds)
+
+	// We could just pass in the original body, but it feels kinda wasteful API wise.
+	reader, _ := ioutil.ReadAll(request.Body)
+	body := bytes.NewReader(reader)
+
+	_, err := signer.Sign(request, body, "execute-api", "eu-west-1", time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
 func (c Client) ReadResourceServer(identifier string, server *ResourceServer) error {
-	resp, err := http.Get(fmt.Sprintf("https://%s/resource-servers/%s", c.BaseUrl, identifier))
+	request, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("https://%s/resource-servers/%s", c.BaseUrl, identifier),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	resp, err := signedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -53,11 +89,16 @@ func (c Client) CreateResourceServer(server ResourceServer) error {
 		return err
 	}
 
-	response, err := http.Post(
+	request, err := http.NewRequest(
+		http.MethodPost,
 		fmt.Sprintf("https://%s/resource-servers", c.BaseUrl),
-		"application/json",
 		&data,
 	)
+	if err != nil {
+		return err
+	}
+
+	response, err := signedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -86,7 +127,7 @@ func (c Client) UpdateResourceServer(updateRequest ResourceServerUpdateRequest) 
 		return err
 	}
 
-	response, err := http.DefaultClient.Do(request)
+	response, err := signedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -107,7 +148,7 @@ func (c Client) DeleteResourceServer(identifier string) error {
 		return err
 	}
 
-	response, err := http.DefaultClient.Do(request)
+	response, err := signedRequest(request)
 	if err != nil {
 		return err
 	}
