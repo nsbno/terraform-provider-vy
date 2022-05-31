@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"log"
 
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-provider-scaffolding-framework/internal/provider"
+	"github.com/nsbno/terraform-provider-central-cognito/internal/provider"
 )
 
 // Run "go generate" to format example terraform files and generate the docs for the registry/website
@@ -28,12 +28,12 @@ var (
 )
 
 func main() {
-	opts := tfsdk.ServeOpts{
+	opts := providerserver.ServeOpts{
 		// TODO: Update this string with the published name of your provider.
-		Name: "registry.terraform.io/hashicorp/scaffolding",
+		Address: "registry.terraform.io/vy/central-cognito",
 	}
 
-	err := tfsdk.Serve(context.Background(), provider.New(version), opts)
+	err := providerserver.Serve(context.Background(), provider.New(version), opts)
 
 	if err != nil {
 		log.Fatal(err.Error())

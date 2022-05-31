@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/nsbno/terraform-provider-central-cognito/internal/central_cognito"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -12,12 +13,10 @@ import (
 // provider satisfies the tfsdk.Provider interface and usually is included
 // with all Resource and DataSource implementations.
 type provider struct {
-	// client can contain the upstream provider SDK or HTTP client used to
+	// Client can contain the upstream provider SDK or HTTP Client used to
 	// communicate with the upstream service. Resource and DataSource
-	// implementations can then make calls using this client.
-	//
-	// TODO: If appropriate, implement upstream provider SDK or HTTP client.
-	// client vendorsdk.ExampleClient
+	// implementations can then make calls using this Client.
+	Client central_cognito.Client
 
 	// configured is set to true at the end of the Configure method.
 	// This can be used in Resource and DataSource implementations to verify
@@ -30,9 +29,11 @@ type provider struct {
 	version string
 }
 
-// providerData can be used to store data from the Terraform configuration.
+// providerData can be sed to store data from the Terraform configuration.
 type providerData struct {
-	Example types.String `tfsdk:"example"`
+	// Endpoint is the URL for the central-cognito service.
+	Endpoint    types.String `tfsdk:"endpoint"`
+	Environment types.String `tfsdk:"environment"`
 }
 
 func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
@@ -44,33 +45,31 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		return
 	}
 
-	// Configuration values are now available.
-	// if data.Example.Null { /* ... */ }
-
-	// If the upstream provider SDK or HTTP client requires configuration, such
-	// as authentication or logging, this is a great opportunity to do so.
-
+	p.Client.BaseUrl = fmt.Sprintf("%s.%s", data.Environment.Value, data.Endpoint.Value)
 	p.configured = true
 }
 
 func (p *provider) GetResources(ctx context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
 	return map[string]tfsdk.ResourceType{
-		"scaffolding_example": exampleResourceType{},
+		"vy-cognito_resource_server": resourceServerType{},
 	}, nil
 }
 
 func (p *provider) GetDataSources(ctx context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
-	return map[string]tfsdk.DataSourceType{
-		"scaffolding_example": exampleDataSourceType{},
-	}, nil
+	return map[string]tfsdk.DataSourceType{}, nil
 }
 
 func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
-			"example": {
-				MarkdownDescription: "Example provider attribute",
-				Optional:            true,
+			"endpoint": {
+				MarkdownDescription: "The URL for the central-cognito service",
+				Required:            true,
+				Type:                types.StringType,
+			},
+			"environment": {
+				MarkdownDescription: "The environment to provision in",
+				Required:            true,
 				Type:                types.StringType,
 			},
 		},
