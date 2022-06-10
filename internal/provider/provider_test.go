@@ -2,12 +2,19 @@ package provider
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"testing"
-
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"testing"
 )
 
 var testAccProvider, _ = convertProviderType(New("test")())
+
+const testAcc_ProviderConfig = `
+provider "vy-cognito" {
+	environment = "tm9ru6l46e"
+	endpoint = "execute-api.eu-west-1.amazonaws.com/main"
+}
+
+`
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
 // acceptance testing. The factory function will be invoked for every Terraform

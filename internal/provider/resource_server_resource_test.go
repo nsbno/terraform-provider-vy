@@ -45,22 +45,14 @@ func resourceServerExists(resource_ *terraform.ResourceState) error {
 	return nil
 }
 
-const testAccResourceServer_Provider = `
-provider "vy-cognito" {
-	environment = "tm9ru6l46e"
-	endpoint = "execute-api.eu-west-1.amazonaws.com/main"
-}
-
-`
-
-const testAccResourceServer_WithoutScopes = testAccResourceServer_Provider + `
+const testAccResourceServer_WithoutScopes = testAcc_ProviderConfig + `
 resource "vy-cognito_resource_server" "test" {
 	identifier = "basic.acceptancetest.io"
 	name = "some service"
 }
 `
 
-const testAccResourceServer_WithScopes = testAccResourceServer_Provider + `
+const testAccResourceServer_WithScopes = testAcc_ProviderConfig + `
 resource "vy-cognito_resource_server" "test" {
 	identifier = "withscopes.acceptancetest.io"
 	name = "some service"

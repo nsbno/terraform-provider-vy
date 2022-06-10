@@ -247,6 +247,8 @@ func (r resourceServer) Delete(ctx context.Context, request tfsdk.DeleteResource
 	tflog.Trace(ctx, "Deleting resource server", map[string]interface{}{
 		"id": data.Id.Value,
 	})
+
+	response.State.RemoveResource(ctx)
 }
 
 func (r resourceServer) ImportState(ctx context.Context, request tfsdk.ImportResourceStateRequest, response *tfsdk.ImportResourceStateResponse) {
