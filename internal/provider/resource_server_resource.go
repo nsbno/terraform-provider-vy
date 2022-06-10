@@ -30,6 +30,9 @@ func (t resourceServerType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.D
 				MarkdownDescription: "The identity of this resource server",
 				Required:            true,
 				Type:                types.StringType,
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					tfsdk.RequiresReplace(),
+				},
 			},
 			"name": {
 				MarkdownDescription: "The name of this resource server",
@@ -37,11 +40,23 @@ func (t resourceServerType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.D
 				Type:                types.StringType,
 			},
 			"scopes": {
-				MarkdownDescription: "Scope for this resource server",
+				MarkdownDescription: "Scopes for this resource server",
 				Optional:            true,
-				Type: types.ListType{
-					ElemType: types.StringType,
-				},
+				Attributes: tfsdk.SetNestedAttributes(
+					map[string]tfsdk.Attribute{
+						"name": {
+							MarkdownDescription: "A name for this scope",
+							Required:            true,
+							Type:                types.StringType,
+						},
+						"description": {
+							MarkdownDescription: "A description of what this scope is for",
+							Required:            true,
+							Type:                types.StringType,
+						},
+					},
+					tfsdk.SetNestedAttributesOptions{},
+				),
 				PlanModifiers: []tfsdk.AttributePlanModifier{
 					tfsdk.RequiresReplace(),
 				},

@@ -45,25 +45,61 @@ func resourceServerExists(resource_ *terraform.ResourceState) error {
 	return nil
 }
 
-const testAccResourceServer_WithoutScopes = `
+const testAccResourceServer_Provider = `
 provider "vy-cognito" {
 	environment = "tm9ru6l46e"
 	endpoint = "execute-api.eu-west-1.amazonaws.com/main"
 }
 
+`
+
+const testAccResourceServer_WithoutScopes = testAccResourceServer_Provider + `
 resource "vy-cognito_resource_server" "test" {
-	identifier = "mything.acceptancetest.io"
+	identifier = "basic.acceptancetest.io"
 	name = "some service"
 }
 `
 
-func TestAccResourceServer_WithoutScopes(t *testing.T) {
+const testAccResourceServer_WithScopes = testAccResourceServer_Provider + `
+resource "vy-cognito_resource_server" "test" {
+	identifier = "withscopes.acceptancetest.io"
+	name = "some service"
+
+	scopes = [
+		{
+			name = "read"
+			description = "Allows for reading of stuff"	
+		},
+		{
+			name = "modify"
+			description = "Modify stuff"	
+		}
+	]
+}
+`
+
+func TestAccResourceServer_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testAccPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceServer_WithoutScopes,
+				Check: resource.ComposeTestCheckFunc(
+					checkResourceServerExists("vy-cognito_resource_server.test"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceServer_WithScopes(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceServer_WithScopes,
 				Check: resource.ComposeTestCheckFunc(
 					checkResourceServerExists("vy-cognito_resource_server.test"),
 				),
