@@ -1,0 +1,8 @@
+= Vy Terraform Provider
+:toc:
+:!toc-title:
+:!toc-placement:
+
+A provider for custom integrations and services at Vy!
+
+toc::[]
