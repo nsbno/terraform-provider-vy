@@ -17,7 +17,10 @@ type Client struct {
 // signedRequest sends a request to our endpoint with AWS Signature V4.
 // This is how we authenticate with the API.
 func signedRequest(request *http.Request) (*http.Response, error) {
-	creds := credentials.NewSharedCredentials("", "") // Use default options
+	creds := credentials.NewChainCredentials([]credentials.Provider{
+		&credentials.EnvProvider{},
+		&credentials.SharedCredentialsProvider{},
+	})
 	signer := v4.NewSigner(creds)
 
 	// We could just pass in the original body, but it feels kinda wasteful API wise.
