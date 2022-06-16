@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/nsbno/terraform-provider-central-cognito/internal/central_cognito"
+	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 	"testing"
 )
 
 func checkResourceServerDestroy(state *terraform.State) error {
 	for _, resource_ := range state.RootModule().Resources {
-		if resource_.Type != "vy_cognito_resource_server" {
+		if resource_.Type != "vy_resource_server" {
 			continue
 		}
 
@@ -27,7 +27,7 @@ func checkResourceServerExists(name string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		resource_, ok := state.RootModule().Resources[name]
 
-		if !ok || resource_.Type != "vy-cognito_resource_server" {
+		if !ok || resource_.Type != "vy_resource_server" {
 			return fmt.Errorf("Resource Server '%s' not found", name)
 		}
 
@@ -46,14 +46,14 @@ func resourceServerExists(resource_ *terraform.ResourceState) error {
 }
 
 const testAccResourceServer_WithoutScopes = testAcc_ProviderConfig + `
-resource "vy-cognito_resource_server" "test" {
+resource "vy_resource_server" "test" {
 	identifier = "basic.acceptancetest.io"
 	name = "some service"
 }
 `
 
 const testAccResourceServer_WithScopes = testAcc_ProviderConfig + `
-resource "vy-cognito_resource_server" "test" {
+resource "vy_resource_server" "test" {
 	identifier = "withscopes.acceptancetest.io"
 	name = "some service"
 
@@ -78,7 +78,7 @@ func TestAccResourceServer_Basic(t *testing.T) {
 			{
 				Config: testAccResourceServer_WithoutScopes,
 				Check: resource.ComposeTestCheckFunc(
-					checkResourceServerExists("vy-cognito_resource_server.test"),
+					checkResourceServerExists("vy_resource_server.test"),
 				),
 			},
 		},
@@ -93,7 +93,7 @@ func TestAccResourceServer_WithScopes(t *testing.T) {
 			{
 				Config: testAccResourceServer_WithScopes,
 				Check: resource.ComposeTestCheckFunc(
-					checkResourceServerExists("vy-cognito_resource_server.test"),
+					checkResourceServerExists("vy_resource_server.test"),
 				),
 			},
 		},

@@ -1,4 +1,4 @@
-module github.com/nsbno/terraform-provider-central-cognito
+module github.com/nsbno/terraform-provider-vy
 
 go 1.17
 

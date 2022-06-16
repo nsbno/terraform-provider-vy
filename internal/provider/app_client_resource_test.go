@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/nsbno/terraform-provider-central-cognito/internal/central_cognito"
+	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 	"testing"
 )
 
@@ -12,7 +12,7 @@ func checkAppClientExists(name string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		resource_, ok := state.RootModule().Resources[name]
 
-		if !ok || resource_.Type != "vy-cognito_app_client" {
+		if !ok || resource_.Type != "vy_app_client" {
 			return fmt.Errorf("Resource Server '%s' not found", name)
 		}
 
@@ -32,7 +32,7 @@ func appClientExists(resource_ *terraform.ResourceState) error {
 
 const testAccAppClient_Basic = testAcc_ProviderConfig + `
 
-resource "vy-cognito_resource_server" "test" {
+resource "vy_resource_server" "test" {
 	identifier = "for-app-client-basic.acceptancetest.io"
 	name = "some service"
 
@@ -48,10 +48,10 @@ resource "vy-cognito_resource_server" "test" {
 	]
 }
 
-resource "vy-cognito_app_client" "test" {
+resource "vy_app_client" "test" {
 	name = "app_client_basic.acceptancetest.io"
 	scopes = [
-		"${vy-cognito_resource_server.test.identifier}/read"
+		"${vy_resource_server.test.identifier}/read"
 	]
 }
 `
@@ -64,7 +64,7 @@ func TestAccAppClient_Basic(t *testing.T) {
 			{
 				Config: testAccAppClient_Basic,
 				Check: resource.ComposeTestCheckFunc(
-					checkAppClientExists("vy-cognito_app_client.test"),
+					checkAppClientExists("vy_app_client.test"),
 				),
 			},
 		},

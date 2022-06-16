@@ -5,7 +5,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"log"
 
-	"github.com/nsbno/terraform-provider-central-cognito/internal/provider"
+	"github.com/nsbno/terraform-provider-vy/internal/provider"
 )
 
 // Run "go generate" to format example terraform files and generate the docs for the registry/website

@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/nsbno/terraform-provider-central-cognito/internal/central_cognito"
+	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -51,8 +51,8 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 
 func (p *provider) GetResources(ctx context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
 	return map[string]tfsdk.ResourceType{
-		"vy-cognito_resource_server": resourceServerType{},
-		"vy-cognito_app_client":      appClientResourceType{},
+		"vy_resource_server": resourceServerType{},
+		"vy_app_client":      appClientResourceType{},
 	}, nil
 }
 

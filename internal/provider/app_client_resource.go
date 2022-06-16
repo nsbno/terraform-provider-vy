@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/nsbno/terraform-provider-central-cognito/internal/central_cognito"
+	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"

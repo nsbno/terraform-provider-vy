@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/nsbno/terraform-provider-central-cognito/internal/central_cognito"
+	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 )
 
 type resourceServerType struct{}

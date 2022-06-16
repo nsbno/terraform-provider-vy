@@ -9,7 +9,7 @@ import (
 var testAccProvider, _ = convertProviderType(New("test")())
 
 const testAcc_ProviderConfig = `
-provider "vy-cognito" {
+provider "vy" {
 	environment = "tm9ru6l46e"
 	endpoint = "execute-api.eu-west-1.amazonaws.com/main"
 }
@@ -21,7 +21,7 @@ provider "vy-cognito" {
 // CLI command executed to create a provider server to which the CLI can
 // reattach.
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
-	"vy-cognito": providerserver.NewProtocol6WithError(&testAccProvider),
+	"vy": providerserver.NewProtocol6WithError(&testAccProvider),
 }
 
 func testAccPreCheck(t *testing.T) {
