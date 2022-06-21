@@ -50,6 +50,7 @@ resource "vy_resource_server" "test" {
 
 resource "vy_app_client" "test" {
 	name = "app_client_basic.acceptancetest.io"
+	type = "backend"
 	scopes = [
 		"${vy_resource_server.test.identifier}/read"
 	]

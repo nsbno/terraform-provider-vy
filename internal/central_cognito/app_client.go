@@ -12,6 +12,7 @@ import (
 type AppClient struct {
 	Name   string   `json:"name"`
 	Scopes []string `json:"scopes"`
+	Type   string   `json:"type"`
 }
 
 type AppClientUpdateRequest struct {

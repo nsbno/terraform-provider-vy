@@ -10,6 +10,40 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type typeAttributeValidator struct{}
+
+func (t typeAttributeValidator) Description(ctx context.Context) string {
+	return "type must be either 'frontend' or 'backend'"
+}
+
+func (t typeAttributeValidator) MarkdownDescription(ctx context.Context) string {
+	return "type must be either `frontend` or `backend`"
+}
+
+func (t typeAttributeValidator) Validate(ctx context.Context, request tfsdk.ValidateAttributeRequest, response *tfsdk.ValidateAttributeResponse) {
+	var str types.String
+
+	diags := tfsdk.ValueAs(ctx, request.AttributeConfig, &str)
+	response.Diagnostics.Append(diags...)
+	if diags.HasError() {
+		return
+	}
+
+	if str.Unknown || str.Null {
+		return
+	}
+
+	if str.Value != "frontend" && str.Value != "backend" {
+		response.Diagnostics.AddAttributeError(
+			request.AttributePath,
+			"Invalid app client type",
+			fmt.Sprintf("The app client must either be 'frontend' or 'backend'. Got: '%s'.", str.Value),
+		)
+
+		return
+	}
+}
+
 type appClientResourceType struct{}
 
 func (t appClientResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
@@ -37,6 +71,17 @@ func (t appClientResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 				Optional:            true,
 				Type:                types.ListType{ElemType: types.StringType},
 			},
+			"type": {
+				MarkdownDescription: "The use-case for this app client. Used to automatically add OAuth options",
+				Required:            true,
+				Type:                types.StringType,
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					tfsdk.RequiresReplace(),
+				},
+				Validators: []tfsdk.AttributeValidator{
+					typeAttributeValidator{},
+				},
+			},
 		},
 	}, nil
 }
@@ -53,6 +98,7 @@ type appClientResourceData struct {
 	Id     types.String `tfsdk:"id"`
 	Name   types.String `tfsdk:"name"`
 	Scopes []string     `tfsdk:"scopes"`
+	Type   types.String `tfsdk:"type"`
 }
 
 type appClientResource struct {
@@ -62,6 +108,7 @@ type appClientResource struct {
 func (ac appClientResourceData) toDomain(domain *central_cognito.AppClient) {
 	domain.Name = ac.Name.Value
 	domain.Scopes = ac.Scopes
+	domain.Type = ac.Type.Value
 }
 
 func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *appClientResourceData) {
@@ -69,6 +116,7 @@ func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *ap
 	state.Id.Null = false
 	state.Name.Value = domain.Name
 	state.Scopes = domain.Scopes
+	state.Type.Value = domain.Type
 }
 
 func (r appClientResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
