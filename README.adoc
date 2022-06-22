@@ -6,3 +6,25 @@
 A provider for custom integrations and services at Vy!
 
 toc::[]
+
+== Usage
+
+Use your normal terraform workflow to add it to your configuration!
+
+[source]
+----
+terraform {
+  required_providers {
+    vy = {
+      version = "x.y.z"
+      source  = "nsbno/vy"
+    }
+  }
+}
+
+provider "vy" {
+    environment = "prod"
+}
+----
+
+You can find more info and documentation about the provider in link:https://registry.terraform.io/providers/nsbno/vy/latest/docs[the terraform registry]!
