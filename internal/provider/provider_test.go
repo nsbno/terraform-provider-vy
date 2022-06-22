@@ -10,8 +10,7 @@ var testAccProvider, _ = convertProviderType(New("test")())
 
 const testAcc_ProviderConfig = `
 provider "vy" {
-	environment = "tm9ru6l46e"
-	endpoint = "execute-api.eu-west-1.amazonaws.com/main"
+	environment = "test"
 }
 
 `

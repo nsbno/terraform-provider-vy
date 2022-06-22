@@ -29,10 +29,27 @@ type provider struct {
 	version string
 }
 
+func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	return tfsdk.Schema{
+		Attributes: map[string]tfsdk.Attribute{
+			"base_url": {
+				MarkdownDescription: "The base_url for the central-cognito service",
+				Type:                types.StringType,
+				Optional:            true,
+			},
+			"environment": {
+				MarkdownDescription: "The environment to provision in",
+				Type:                types.StringType,
+				Required:            true,
+			},
+		},
+	}, nil
+}
+
 // providerData can be sed to store data from the Terraform configuration.
 type providerData struct {
-	// Endpoint is the URL for the central-cognito service.
-	Endpoint    types.String `tfsdk:"endpoint"`
+	// BaseUrl is the URL for the central-cognito service.
+	BaseUrl     types.String `tfsdk:"base_url"`
 	Environment types.String `tfsdk:"environment"`
 }
 
@@ -45,7 +62,17 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		return
 	}
 
-	p.Client.BaseUrl = fmt.Sprintf("%s.%s", data.Environment.Value, data.Endpoint.Value)
+	if data.BaseUrl.Null {
+		data.BaseUrl.Value = "cognito.vydev.io"
+		data.BaseUrl.Null = false
+	}
+
+	if data.Environment.Value == "prod" {
+		p.Client.BaseUrl = fmt.Sprintf("delegated.%s", data.BaseUrl.Value)
+	} else {
+		p.Client.BaseUrl = fmt.Sprintf("delegated.%s.%s", data.Environment.Value, data.BaseUrl.Value)
+	}
+
 	p.configured = true
 }
 
@@ -58,23 +85,6 @@ func (p *provider) GetResources(ctx context.Context) (map[string]tfsdk.ResourceT
 
 func (p *provider) GetDataSources(ctx context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
 	return map[string]tfsdk.DataSourceType{}, nil
-}
-
-func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		Attributes: map[string]tfsdk.Attribute{
-			"endpoint": {
-				MarkdownDescription: "The URL for the central-cognito service",
-				Required:            true,
-				Type:                types.StringType,
-			},
-			"environment": {
-				MarkdownDescription: "The environment to provision in",
-				Required:            true,
-				Type:                types.StringType,
-			},
-		},
-	}, nil
 }
 
 func New(version string) func() tfsdk.Provider {
