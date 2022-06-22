@@ -13,12 +13,27 @@ An app client, used to access resource servers.
 ## Example Usage
 
 ```terraform
-resource "vy_app_client" "test" {
+resource "vy_app_client" "backend_application" {
   name = "app_client_basic.acceptancetest.io"
   type = "backend"
+
   scopes = [
-    "my.cool.service.vydev.io/read"
+    "my.cool.service.vydev.io/read",
+    "my.cool.service.vydev.io/delete",
   ]
+}
+
+resource "vy_app_client" "frontend_application" {
+  name = "app_client_basic.acceptancetest.io"
+  type = "frontend"
+
+  scopes = [
+    "my.cool.service.vydev.io/read",
+    "my.cool.service.vydev.io/write",
+  ]
+
+  callback_urls = ["https://example.com/callback"]
+  logout_urls = ["https://example.com/logout"]
 }
 ```
 
@@ -32,6 +47,8 @@ resource "vy_app_client" "test" {
 
 ### Optional
 
+- **callback_urls** (List of String) Callback URLs to use. Used together with `type` set to `frontend`.
+- **logout_urls** (List of String) Logout URLs to use. Used together with `type` set to `frontend`.
 - **scopes** (List of String) Scopes that this client has access to
 
 ### Read-Only

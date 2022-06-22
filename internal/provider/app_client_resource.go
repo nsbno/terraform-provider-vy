@@ -82,6 +82,16 @@ func (t appClientResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 					typeAttributeValidator{},
 				},
 			},
+			"callback_urls": {
+				MarkdownDescription: "Callback URLs to use. Used together with `type` set to `frontend`.",
+				Optional:            true,
+				Type:                types.ListType{ElemType: types.StringType},
+			},
+			"logout_urls": {
+				MarkdownDescription: "Logout URLs to use. Used together with `type` set to `frontend`.",
+				Optional:            true,
+				Type:                types.ListType{ElemType: types.StringType},
+			},
 		},
 	}, nil
 }
@@ -95,10 +105,12 @@ func (t appClientResourceType) NewResource(ctx context.Context, in tfsdk.Provide
 }
 
 type appClientResourceData struct {
-	Id     types.String `tfsdk:"id"`
-	Name   types.String `tfsdk:"name"`
-	Scopes []string     `tfsdk:"scopes"`
-	Type   types.String `tfsdk:"type"`
+	Id           types.String `tfsdk:"id"`
+	Name         types.String `tfsdk:"name"`
+	Scopes       []string     `tfsdk:"scopes"`
+	Type         types.String `tfsdk:"type"`
+	CallbackUrls []string     `tfsdk:"callback_urls"`
+	LogoutUrls   []string     `tfsdk:"logout_urls"`
 }
 
 type appClientResource struct {
@@ -109,6 +121,8 @@ func (ac appClientResourceData) toDomain(domain *central_cognito.AppClient) {
 	domain.Name = ac.Name.Value
 	domain.Scopes = ac.Scopes
 	domain.Type = ac.Type.Value
+	domain.CallbackUrls = ac.CallbackUrls
+	domain.LogoutUrls = ac.LogoutUrls
 }
 
 func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *appClientResourceData) {
@@ -117,6 +131,8 @@ func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *ap
 	state.Name.Value = domain.Name
 	state.Scopes = domain.Scopes
 	state.Type.Value = domain.Type
+	state.CallbackUrls = domain.CallbackUrls
+	state.LogoutUrls = domain.LogoutUrls
 }
 
 func (r appClientResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {

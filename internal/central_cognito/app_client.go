@@ -10,14 +10,18 @@ import (
 )
 
 type AppClient struct {
-	Name   string   `json:"name"`
-	Scopes []string `json:"scopes"`
-	Type   string   `json:"type"`
+	Name         string   `json:"name"`
+	Scopes       []string `json:"scopes"`
+	Type         string   `json:"type"`
+	CallbackUrls []string `json:"callback_urls"`
+	LogoutUrls   []string `json:"logout_urls"`
 }
 
 type AppClientUpdateRequest struct {
-	Name   string
-	Scopes []string
+	Name         string   `json:"name"`
+	Scopes       []string `json:"scopes"`
+	CallbackUrls string   `json:"callback_urls"`
+	LogoutUrls   string   `json:"logout_urls"`
 }
 
 func (c Client) ReadAppClient(name string, server *AppClient) error {

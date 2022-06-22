@@ -54,6 +54,8 @@ resource "vy_app_client" "test" {
 	scopes = [
 		"${vy_resource_server.test.identifier}/read"
 	]
+	callback_urls = ["https://example.com/callback"]
+	logout_urls = ["https://example.com/logout"]
 }
 `
 
