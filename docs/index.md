@@ -3,12 +3,12 @@
 page_title: "vy Provider"
 subcategory: ""
 description: |-
-  
+  A provider for interracting with Vy's internal services.
 ---
 
 # vy Provider
 
-
+A provider for interracting with Vy's internal services.
 
 ## Example Usage
 

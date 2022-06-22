@@ -31,6 +31,7 @@ type provider struct {
 
 func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
+		MarkdownDescription: "A provider for interracting with Vy's internal services.",
 		Attributes: map[string]tfsdk.Attribute{
 			"base_url": {
 				MarkdownDescription: "The base_url for the central-cognito service",
