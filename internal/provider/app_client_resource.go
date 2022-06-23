@@ -92,6 +92,15 @@ func (t appClientResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 				Optional:            true,
 				Type:                types.ListType{ElemType: types.StringType},
 			},
+			"secret": {
+				MarkdownDescription: "A secret used for your client to authenticate itself. " +
+					"Only populated when using the `backend` type.",
+				Computed: true,
+				Type:     types.StringType,
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					tfsdk.UseStateForUnknown(),
+				},
+			},
 		},
 	}, nil
 }
@@ -111,6 +120,7 @@ type appClientResourceData struct {
 	Type         types.String `tfsdk:"type"`
 	CallbackUrls []string     `tfsdk:"callback_urls"`
 	LogoutUrls   []string     `tfsdk:"logout_urls"`
+	Secret       types.String `tfsdk:"secret"`
 }
 
 type appClientResource struct {
@@ -133,6 +143,8 @@ func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *ap
 	state.Type.Value = domain.Type
 	state.CallbackUrls = domain.CallbackUrls
 	state.LogoutUrls = domain.LogoutUrls
+	state.Secret.Value = domain.Secret
+	state.Secret.Null = false
 }
 
 func (r appClientResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {

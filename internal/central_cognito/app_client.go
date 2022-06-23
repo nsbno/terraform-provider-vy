@@ -15,6 +15,7 @@ type AppClient struct {
 	Type         string   `json:"type"`
 	CallbackUrls []string `json:"callback_urls"`
 	LogoutUrls   []string `json:"logout_urls"`
+	Secret       string   `json:"secret"`
 }
 
 type AppClientUpdateRequest struct {
