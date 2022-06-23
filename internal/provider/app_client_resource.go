@@ -69,7 +69,7 @@ func (t appClientResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 			"scopes": {
 				MarkdownDescription: "Scopes that this client has access to",
 				Optional:            true,
-				Type:                types.ListType{ElemType: types.StringType},
+				Type:                types.SetType{ElemType: types.StringType},
 			},
 			"type": {
 				MarkdownDescription: "The use-case for this app client. Used to automatically add OAuth options",

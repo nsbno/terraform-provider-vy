@@ -30,8 +30,7 @@ func appClientExists(resource_ *terraform.ResourceState) error {
 	return nil
 }
 
-const testAccAppClient_Basic = testAcc_ProviderConfig + `
-
+const testAccAppClient_ResourceServer = `
 resource "vy_resource_server" "test" {
 	identifier = "for-app-client-basic.acceptancetest.io"
 	name = "some service"
@@ -47,10 +46,12 @@ resource "vy_resource_server" "test" {
 		}
 	]
 }
+`
 
-resource "vy_app_client" "test" {
-	name = "app_client_basic.acceptancetest.io"
-	type = "backend"
+const testAccAppClient_Frontend = testAcc_ProviderConfig + testAccAppClient_ResourceServer + `
+resource "vy_app_client" "frontend" {
+	name = "app_client_frontend.acceptancetest.io"
+	type = "frontend"
 	scopes = [
 		"${vy_resource_server.test.identifier}/read"
 	]
@@ -59,15 +60,41 @@ resource "vy_app_client" "test" {
 }
 `
 
-func TestAccAppClient_Basic(t *testing.T) {
+func TestAccAppClient_Frontend(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testAccPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAppClient_Basic,
+				Config: testAccAppClient_Frontend,
 				Check: resource.ComposeTestCheckFunc(
-					checkAppClientExists("vy_app_client.test"),
+					checkAppClientExists("vy_app_client.frontend"),
+				),
+			},
+		},
+	})
+}
+
+const testAccAppClient_Backend = testAcc_ProviderConfig + testAccAppClient_ResourceServer + `
+resource "vy_app_client" "backend" {
+	name = "app_client_backend.acceptancetest.io"
+	type = "backend"
+	scopes = [
+		"${vy_resource_server.test.identifier}/read",
+		"${vy_resource_server.test.identifier}/modify",
+	]
+}
+`
+
+func TestAccAppClient_Backend(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAppClient_Backend,
+				Check: resource.ComposeTestCheckFunc(
+					checkAppClientExists("vy_app_client.backend"),
 				),
 			},
 		},
