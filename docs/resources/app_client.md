@@ -49,10 +49,11 @@ resource "vy_app_client" "frontend_application" {
 
 - **callback_urls** (List of String) Callback URLs to use. Used together with `type` set to `frontend`.
 - **logout_urls** (List of String) Logout URLs to use. Used together with `type` set to `frontend`.
-- **scopes** (List of String) Scopes that this client has access to
+- **scopes** (Set of String) Scopes that this client has access to
 
 ### Read-Only
 
 - **id** (String) The ID of this resource.
+- **secret** (String) A secret used for your client to authenticate itself. Only populated when using the `backend` type.
 
 
