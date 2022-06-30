@@ -10,12 +10,13 @@ import (
 )
 
 type AppClient struct {
-	Name         string   `json:"name"`
-	Scopes       []string `json:"scopes"`
-	Type         string   `json:"type"`
-	CallbackUrls []string `json:"callback_urls"`
-	LogoutUrls   []string `json:"logout_urls"`
-	Secret       string   `json:"secret"`
+	Name           string   `json:"name"`
+	Scopes         []string `json:"scopes"`
+	Type           string   `json:"type"`
+	CallbackUrls   []string `json:"callback_urls"`
+	LogoutUrls     []string `json:"logout_urls"`
+	Secret         string   `json:"secret"`
+	GenerateSecret bool     `json:"generate_secret"`
 }
 
 type AppClientUpdateRequest struct {

@@ -92,6 +92,11 @@ func (t appClientResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 				Optional:            true,
 				Type:                types.ListType{ElemType: types.StringType},
 			},
+			"generate_secret": {
+				MarkdownDescription: "Should a secret be generated? Automatically set by `type`, but you're able to override it with this option.",
+				Optional:            true,
+				Type:                types.BoolType,
+			},
 			"secret": {
 				MarkdownDescription: "A secret used for your client to authenticate itself. " +
 					"Only populated when using the `backend` type.",
@@ -114,13 +119,14 @@ func (t appClientResourceType) NewResource(ctx context.Context, in tfsdk.Provide
 }
 
 type appClientResourceData struct {
-	Id           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	Scopes       []string     `tfsdk:"scopes"`
-	Type         types.String `tfsdk:"type"`
-	CallbackUrls []string     `tfsdk:"callback_urls"`
-	LogoutUrls   []string     `tfsdk:"logout_urls"`
-	Secret       types.String `tfsdk:"secret"`
+	Id             types.String `tfsdk:"id"`
+	Name           types.String `tfsdk:"name"`
+	Scopes         []string     `tfsdk:"scopes"`
+	Type           types.String `tfsdk:"type"`
+	CallbackUrls   []string     `tfsdk:"callback_urls"`
+	LogoutUrls     []string     `tfsdk:"logout_urls"`
+	GenerateSecret types.Bool   `tfsdk:"generate_secret"`
+	Secret         types.String `tfsdk:"secret"`
 }
 
 type appClientResource struct {
@@ -133,6 +139,7 @@ func (ac appClientResourceData) toDomain(domain *central_cognito.AppClient) {
 	domain.Type = ac.Type.Value
 	domain.CallbackUrls = ac.CallbackUrls
 	domain.LogoutUrls = ac.LogoutUrls
+	domain.GenerateSecret = ac.GenerateSecret.Value
 }
 
 func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *appClientResourceData) {
@@ -145,6 +152,7 @@ func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *ap
 	state.LogoutUrls = domain.LogoutUrls
 	state.Secret.Value = domain.Secret
 	state.Secret.Null = false
+	state.GenerateSecret.Value = domain.GenerateSecret
 }
 
 func (r appClientResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {

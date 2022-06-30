@@ -48,6 +48,7 @@ resource "vy_app_client" "frontend_application" {
 ### Optional
 
 - **callback_urls** (List of String) Callback URLs to use. Used together with `type` set to `frontend`.
+- **generate_secret** (Boolean) Should a secret be generated? Automatically set by `type`, but you're able to override it with this option.
 - **logout_urls** (List of String) Logout URLs to use. Used together with `type` set to `frontend`.
 - **scopes** (Set of String) Scopes that this client has access to
 
