@@ -13,10 +13,11 @@ type AppClient struct {
 	Name           string   `json:"name"`
 	Scopes         []string `json:"scopes"`
 	Type           string   `json:"type"`
+	GenerateSecret bool     `json:"generate_secret"`
 	CallbackUrls   []string `json:"callback_urls"`
 	LogoutUrls     []string `json:"logout_urls"`
-	Secret         string   `json:"secret"`
-	GenerateSecret bool     `json:"generate_secret"`
+	ClientId       string   `json:"client_id"`
+	ClientSecret   string   `json:"client_secret"`
 }
 
 type AppClientUpdateRequest struct {

@@ -97,7 +97,15 @@ func (t appClientResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 				Optional:            true,
 				Type:                types.BoolType,
 			},
-			"secret": {
+			"client_id": {
+				MarkdownDescription: "The ID used for your client to authenticate itself. ",
+				Computed:            true,
+				Type:                types.StringType,
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					tfsdk.UseStateForUnknown(),
+				},
+			},
+			"client_secret": {
 				MarkdownDescription: "A secret used for your client to authenticate itself. " +
 					"Only populated when using the `backend` type.",
 				Computed: true,
@@ -126,7 +134,8 @@ type appClientResourceData struct {
 	CallbackUrls   []string     `tfsdk:"callback_urls"`
 	LogoutUrls     []string     `tfsdk:"logout_urls"`
 	GenerateSecret types.Bool   `tfsdk:"generate_secret"`
-	Secret         types.String `tfsdk:"secret"`
+	ClientId       types.String `tfsdk:"client_id"`
+	ClientSecret   types.String `tfsdk:"client_secret"`
 }
 
 type appClientResource struct {
@@ -148,11 +157,13 @@ func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *ap
 	state.Name.Value = domain.Name
 	state.Scopes = domain.Scopes
 	state.Type.Value = domain.Type
+	state.GenerateSecret.Value = domain.GenerateSecret
 	state.CallbackUrls = domain.CallbackUrls
 	state.LogoutUrls = domain.LogoutUrls
-	state.Secret.Value = domain.Secret
-	state.Secret.Null = false
-	state.GenerateSecret.Value = domain.GenerateSecret
+	state.ClientId.Value = domain.ClientId
+	state.ClientId.Null = false
+	state.ClientSecret.Value = domain.ClientSecret
+	state.ClientSecret.Null = false
 }
 
 func (r appClientResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
