@@ -13,11 +13,11 @@ type AppClient struct {
 	Name           string   `json:"name"`
 	Scopes         []string `json:"scopes"`
 	Type           string   `json:"type"`
-	GenerateSecret bool     `json:"generate_secret"`
+	GenerateSecret *bool    `json:"generate_secret"`
 	CallbackUrls   []string `json:"callback_urls"`
 	LogoutUrls     []string `json:"logout_urls"`
-	ClientId       string   `json:"client_id"`
-	ClientSecret   string   `json:"client_secret"`
+	ClientId       *string  `json:"client_id"`
+	ClientSecret   *string  `json:"client_secret"`
 }
 
 type AppClientUpdateRequest struct {
@@ -59,12 +59,12 @@ func (c Client) ReadAppClient(name string, server *AppClient) error {
 	return nil
 }
 
-func (c Client) CreateAppClient(server AppClient) error {
+func (c Client) CreateAppClient(server AppClient) (*AppClient, error) {
 	var data bytes.Buffer
 
 	err := json.NewEncoder(&data).Encode(server)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	request, err := http.NewRequest(
@@ -73,12 +73,12 @@ func (c Client) CreateAppClient(server AppClient) error {
 		&data,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	response, err := signedRequest(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if response.StatusCode != 201 {
@@ -86,10 +86,16 @@ func (c Client) CreateAppClient(server AppClient) error {
 
 		str, _ := io.ReadAll(response.Body)
 
-		return errors.New(fmt.Sprintf("could not create resource. %s", str))
+		return nil, errors.New(fmt.Sprintf("could not create resource. %s", str))
 	}
 
-	return nil
+	var createdAppClient AppClient
+	err = json.NewDecoder(response.Body).Decode(&createdAppClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return &createdAppClient, nil
 }
 
 func (c Client) UpdateAppClient(updateRequest AppClientUpdateRequest) error {

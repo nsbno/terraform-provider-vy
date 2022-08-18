@@ -95,6 +95,7 @@ func (t appClientResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 			"generate_secret": {
 				MarkdownDescription: "Should a secret be generated? Automatically set by `type`, but you're able to override it with this option.",
 				Optional:            true,
+				Computed:            true, // The backend can change it if it is not set by the user.
 				Type:                types.BoolType,
 			},
 			"client_id": {
@@ -148,7 +149,10 @@ func (ac appClientResourceData) toDomain(domain *central_cognito.AppClient) {
 	domain.Type = ac.Type.Value
 	domain.CallbackUrls = ac.CallbackUrls
 	domain.LogoutUrls = ac.LogoutUrls
-	domain.GenerateSecret = ac.GenerateSecret.Value
+
+	if !ac.GenerateSecret.Null {
+		domain.GenerateSecret = &ac.GenerateSecret.Value
+	}
 }
 
 func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *appClientResourceData) {
@@ -157,13 +161,16 @@ func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *ap
 	state.Name.Value = domain.Name
 	state.Scopes = domain.Scopes
 	state.Type.Value = domain.Type
-	state.GenerateSecret.Value = domain.GenerateSecret
+	state.GenerateSecret.Value = *domain.GenerateSecret
 	state.CallbackUrls = domain.CallbackUrls
 	state.LogoutUrls = domain.LogoutUrls
-	state.ClientId.Value = domain.ClientId
+	state.ClientId.Value = *domain.ClientId
 	state.ClientId.Null = false
-	state.ClientSecret.Value = domain.ClientSecret
-	state.ClientSecret.Null = false
+
+	if domain.ClientSecret != nil {
+		state.ClientSecret.Value = *domain.ClientSecret
+		state.ClientSecret.Null = false
+	}
 }
 
 func (r appClientResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
@@ -182,7 +189,7 @@ func (r appClientResource) Create(ctx context.Context, req tfsdk.CreateResourceR
 	var appClient central_cognito.AppClient
 	data.toDomain(&appClient)
 
-	err := r.provider.Client.CreateAppClient(appClient)
+	var createdAppClient, err = r.provider.Client.CreateAppClient(appClient)
 	if err != nil {
 		diags = diag.Diagnostics{}
 		diags.AddError(
@@ -194,7 +201,10 @@ func (r appClientResource) Create(ctx context.Context, req tfsdk.CreateResourceR
 		return
 	}
 
-	diags = resp.State.Set(ctx, &data)
+	var createdAppClientResource appClientResourceData
+	appClientResourceDataFromDomain(*createdAppClient, &createdAppClientResource)
+
+	diags = resp.State.Set(ctx, &createdAppClientResource)
 	resp.Diagnostics.Append(diags...)
 }
 
