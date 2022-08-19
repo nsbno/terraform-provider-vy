@@ -2,7 +2,8 @@ package central_cognito
 
 import (
 	"bytes"
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/signer/v4"
 	"io"
 	"io/ioutil"
@@ -17,11 +18,9 @@ type Client struct {
 // signedRequest sends a request to our endpoint with AWS Signature V4.
 // This is how we authenticate with the API.
 func signedRequest(request *http.Request) (*http.Response, error) {
-	creds := credentials.NewChainCredentials([]credentials.Provider{
-		&credentials.EnvProvider{},
-		&credentials.SharedCredentialsProvider{},
-	})
-	signer := v4.NewSigner(creds)
+	config := aws.Config{}
+	sess := session.Must(session.NewSession(&config))
+	signer := v4.NewSigner(sess.Config.Credentials)
 
 	// We could just pass in the original body, but it feels kinda wasteful API wise.
 	var body io.ReadSeeker
