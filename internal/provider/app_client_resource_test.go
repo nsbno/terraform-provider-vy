@@ -60,6 +60,19 @@ resource "vy_app_client" "frontend" {
 }
 `
 
+const testAccAppClient_FrontendAddedScope = testAcc_ProviderConfig + testAccAppClient_ResourceServer + `
+resource "vy_app_client" "frontend" {
+	name = "app_client_frontend.acceptancetest.io"
+	type = "frontend"
+	scopes = [
+		"${vy_resource_server.test.identifier}/read",
+		"${vy_resource_server.test.identifier}/modify",
+	]
+	callback_urls = ["https://example.com/callback"]
+	logout_urls = ["https://example.com/logout"]
+}
+`
+
 func TestAccAppClient_Frontend(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -67,6 +80,12 @@ func TestAccAppClient_Frontend(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAppClient_Frontend,
+				Check: resource.ComposeTestCheckFunc(
+					checkAppClientExists("vy_app_client.frontend"),
+				),
+			},
+			{
+				Config: testAccAppClient_FrontendAddedScope,
 				Check: resource.ComposeTestCheckFunc(
 					checkAppClientExists("vy_app_client.frontend"),
 				),
@@ -86,6 +105,16 @@ resource "vy_app_client" "backend" {
 }
 `
 
+const testAccAppClient_BackendRemoveScope = testAcc_ProviderConfig + testAccAppClient_ResourceServer + `
+resource "vy_app_client" "backend" {
+	name = "app_client_backend.acceptancetest.io"
+	type = "backend"
+	scopes = [
+		"${vy_resource_server.test.identifier}/read",
+	]
+}
+`
+
 func TestAccAppClient_Backend(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -93,6 +122,12 @@ func TestAccAppClient_Backend(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAppClient_Backend,
+				Check: resource.ComposeTestCheckFunc(
+					checkAppClientExists("vy_app_client.backend"),
+				),
+			},
+			{
+				Config: testAccAppClient_BackendRemoveScope,
 				Check: resource.ComposeTestCheckFunc(
 					checkAppClientExists("vy_app_client.backend"),
 				),
