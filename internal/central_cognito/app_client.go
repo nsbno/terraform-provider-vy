@@ -23,8 +23,8 @@ type AppClient struct {
 type AppClientUpdateRequest struct {
 	Name         string   `json:"name"`
 	Scopes       []string `json:"scopes"`
-	CallbackUrls string   `json:"callback_urls"`
-	LogoutUrls   string   `json:"logout_urls"`
+	CallbackUrls []string `json:"callback_urls"`
+	LogoutUrls   []string `json:"logout_urls"`
 }
 
 func (c Client) ReadAppClient(name string, server *AppClient) error {

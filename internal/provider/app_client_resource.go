@@ -253,8 +253,10 @@ func (r appClientResource) Update(ctx context.Context, req tfsdk.UpdateResourceR
 	data.toDomain(&appClient)
 
 	err := r.provider.Client.UpdateAppClient(central_cognito.AppClientUpdateRequest{
-		Name:   appClient.Name,
-		Scopes: appClient.Scopes,
+		Name:         appClient.Name,
+		Scopes:       appClient.Scopes,
+		CallbackUrls: appClient.CallbackUrls,
+		LogoutUrls:   appClient.LogoutUrls,
 	})
 	if err != nil {
 		diags = diag.Diagnostics{}
