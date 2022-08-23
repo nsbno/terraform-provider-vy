@@ -97,6 +97,9 @@ func (t appClientResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 				Optional:            true,
 				Computed:            true, // The backend can change it if it is not set by the user.
 				Type:                types.BoolType,
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					tfsdk.UseStateForUnknown(),
+				},
 			},
 			"client_id": {
 				MarkdownDescription: "The ID used for your client to authenticate itself. ",
@@ -161,7 +164,6 @@ func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *ap
 	state.Name.Value = domain.Name
 	state.Scopes = domain.Scopes
 	state.Type.Value = domain.Type
-	state.GenerateSecret.Value = *domain.GenerateSecret
 	state.CallbackUrls = domain.CallbackUrls
 	state.LogoutUrls = domain.LogoutUrls
 	state.ClientId.Value = *domain.ClientId
