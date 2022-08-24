@@ -135,3 +135,43 @@ func TestAccAppClient_Backend(t *testing.T) {
 		},
 	})
 }
+
+const testAccAppClient_Complex = testAcc_ProviderConfig + testAccAppClient_ResourceServer + `
+resource "vy_app_client" "complex" {
+  name = "app_client_complex.acceptancetest.io"
+
+  type = "frontend"
+  generate_secret = true
+
+  callback_urls   = [
+    "http://localhost:3000/auth/callback",
+    "https://example.com/auth/callback"
+  ]
+  logout_urls = [
+    "http://localhost:3000/logout",
+    "https://example.com/logout"
+  ]
+
+  scopes = [
+    "email",
+    "openid",
+    "phone",
+    "profile"
+  ]
+}
+`
+
+func TestAccAppClient_Complex(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAppClient_Complex,
+				Check: resource.ComposeTestCheckFunc(
+					checkAppClientExists("vy_app_client.complex"),
+				),
+			},
+		},
+	})
+}

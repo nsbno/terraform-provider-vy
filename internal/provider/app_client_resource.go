@@ -166,6 +166,7 @@ func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *ap
 	state.Type.Value = domain.Type
 	state.CallbackUrls = domain.CallbackUrls
 	state.LogoutUrls = domain.LogoutUrls
+	state.GenerateSecret.Value = *domain.GenerateSecret
 	state.ClientId.Value = *domain.ClientId
 	state.ClientId.Null = false
 
