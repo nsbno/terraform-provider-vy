@@ -98,6 +98,7 @@ func (t appClientResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 				Computed:            true, // The backend can change it if it is not set by the user.
 				Type:                types.BoolType,
 				PlanModifiers: tfsdk.AttributePlanModifiers{
+					tfsdk.RequiresReplace(),
 					tfsdk.UseStateForUnknown(),
 				},
 			},
@@ -166,13 +167,23 @@ func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *ap
 	state.Type.Value = domain.Type
 	state.CallbackUrls = domain.CallbackUrls
 	state.LogoutUrls = domain.LogoutUrls
-	state.GenerateSecret.Value = *domain.GenerateSecret
-	state.ClientId.Value = *domain.ClientId
-	state.ClientId.Null = false
+
+	if domain.GenerateSecret != nil {
+		state.GenerateSecret.Value = *domain.GenerateSecret
+		state.GenerateSecret.Null = false
+		state.GenerateSecret.Unknown = false
+	}
+
+	if domain.ClientId != nil {
+		state.ClientId.Value = *domain.ClientId
+		state.ClientId.Null = false
+		state.ClientId.Unknown = false
+	}
 
 	if domain.ClientSecret != nil {
 		state.ClientSecret.Value = *domain.ClientSecret
 		state.ClientSecret.Null = false
+		state.ClientSecret.Unknown = false
 	}
 }
 
