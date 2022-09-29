@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
+	"github.com/nsbno/terraform-provider-vy/internal/enroll_account"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -17,6 +18,8 @@ type provider struct {
 	// communicate with the upstream service. Resource and DataSource
 	// implementations can then make calls using this Client.
 	Client central_cognito.Client
+
+	EnrollAccountClient enroll_account.Client
 
 	// configured is set to true at the end of the Configure method.
 	// This can be used in Resource and DataSource implementations to verify
@@ -33,8 +36,13 @@ func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostic
 	return tfsdk.Schema{
 		MarkdownDescription: "A provider for interracting with Vy's internal services.",
 		Attributes: map[string]tfsdk.Attribute{
-			"base_url": {
-				MarkdownDescription: "The base_url for the central-cognito service",
+			"central_cognito_base_url": {
+				MarkdownDescription: "The base url for the central-cognito service",
+				Type:                types.StringType,
+				Optional:            true,
+			},
+			"enroll_account_base_url": {
+				MarkdownDescription: "The base url for the deployment enrollment service",
 				Type:                types.StringType,
 				Optional:            true,
 			},
@@ -49,9 +57,9 @@ func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostic
 
 // providerData can be sed to store data from the Terraform configuration.
 type providerData struct {
-	// BaseUrl is the URL for the central-cognito service.
-	BaseUrl     types.String `tfsdk:"base_url"`
-	Environment types.String `tfsdk:"environment"`
+	CentralCognitoBaseUrl types.String `tfsdk:"central_cognito_base_url"`
+	EnrollAccountBaseUrl  types.String `tfsdk:"enroll_account_base_url"`
+	Environment           types.String `tfsdk:"environment"`
 }
 
 func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
@@ -63,15 +71,26 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		return
 	}
 
-	if data.BaseUrl.Null {
-		data.BaseUrl.Value = "cognito.vydev.io"
-		data.BaseUrl.Null = false
+	if data.CentralCognitoBaseUrl.Null {
+		data.CentralCognitoBaseUrl.Value = "cognito.vydev.io"
+		data.CentralCognitoBaseUrl.Null = false
 	}
 
 	if data.Environment.Value == "prod" {
-		p.Client.BaseUrl = fmt.Sprintf("delegated.%s", data.BaseUrl.Value)
+		p.Client.BaseUrl = fmt.Sprintf("delegated.%s", data.CentralCognitoBaseUrl.Value)
 	} else {
-		p.Client.BaseUrl = fmt.Sprintf("delegated.%s.%s", data.Environment.Value, data.BaseUrl.Value)
+		p.Client.BaseUrl = fmt.Sprintf("delegated.%s.%s", data.Environment.Value, data.CentralCognitoBaseUrl.Value)
+	}
+
+	if data.EnrollAccountBaseUrl.Null {
+		data.EnrollAccountBaseUrl.Value = "vydeployment.vydev.io"
+		data.EnrollAccountBaseUrl.Null = false
+	}
+
+	if data.Environment.Value == "prod" {
+		p.EnrollAccountClient.BaseUrl = fmt.Sprintf("enroll.%s", data.EnrollAccountBaseUrl.Value)
+	} else {
+		p.EnrollAccountClient.BaseUrl = fmt.Sprintf("enroll.%s.%s", data.Environment.Value, data.EnrollAccountBaseUrl.Value)
 	}
 
 	p.configured = true
@@ -79,8 +98,9 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 
 func (p *provider) GetResources(ctx context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
 	return map[string]tfsdk.ResourceType{
-		"vy_resource_server": resourceServerType{},
-		"vy_app_client":      appClientResourceType{},
+		"vy_resource_server":    resourceServerType{},
+		"vy_app_client":         appClientResourceType{},
+		"vy_deployment_account": deploymentResourceType{},
 	}, nil
 }
 
