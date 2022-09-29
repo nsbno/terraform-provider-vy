@@ -27,4 +27,5 @@ provider "vy" {
 
 ### Optional
 
-- **base_url** (String) The base_url for the central-cognito service
+- **central_cognito_base_url** (String) The base url for the central-cognito service
+- **enroll_account_base_url** (String) The base url for the deployment enrollment service
