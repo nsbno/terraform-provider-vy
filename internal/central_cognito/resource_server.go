@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 type Scope struct {
@@ -29,7 +30,7 @@ type ResourceServerUpdateRequest struct {
 func (c Client) ReadResourceServer(identifier string, server *ResourceServer) error {
 	request, err := http.NewRequest(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/resource-servers/%s", c.BaseUrl, identifier),
+		fmt.Sprintf("https://%s/resource-servers/%s", c.BaseUrl, url.QueryEscape(identifier)),
 		nil,
 	)
 	if err != nil {
@@ -101,7 +102,7 @@ func (c Client) UpdateResourceServer(updateRequest ResourceServerUpdateRequest) 
 
 	request, err := http.NewRequest(
 		http.MethodPut,
-		fmt.Sprintf("https://%s/resource-servers/%s", c.BaseUrl, updateRequest.Identifier),
+		fmt.Sprintf("https://%s/resource-servers/%s", c.BaseUrl, url.QueryEscape(updateRequest.Identifier)),
 		&data,
 	)
 	if err != nil {
@@ -122,7 +123,7 @@ func (c Client) UpdateResourceServer(updateRequest ResourceServerUpdateRequest) 
 func (c Client) DeleteResourceServer(identifier string) error {
 	request, err := http.NewRequest(
 		http.MethodDelete,
-		fmt.Sprintf("https://%s/resource-servers/%s", c.BaseUrl, identifier),
+		fmt.Sprintf("https://%s/resource-servers/%s", c.BaseUrl, url.QueryEscape(identifier)),
 		nil,
 	)
 	if err != nil {

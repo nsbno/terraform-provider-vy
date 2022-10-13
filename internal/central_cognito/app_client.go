@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 type AppClient struct {
@@ -30,7 +31,7 @@ type AppClientUpdateRequest struct {
 func (c Client) ReadAppClient(name string, server *AppClient) error {
 	request, err := http.NewRequest(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/app-clients/%s", c.BaseUrl, name),
+		fmt.Sprintf("https://%s/app-clients/%s", c.BaseUrl, url.QueryEscape(name)),
 		nil,
 	)
 	if err != nil {
@@ -108,7 +109,7 @@ func (c Client) UpdateAppClient(updateRequest AppClientUpdateRequest) error {
 
 	request, err := http.NewRequest(
 		http.MethodPut,
-		fmt.Sprintf("https://%s/app-clients/%s", c.BaseUrl, updateRequest.Name),
+		fmt.Sprintf("https://%s/app-clients/%s", c.BaseUrl, url.QueryEscape(updateRequest.Name)),
 		&data,
 	)
 	if err != nil {
@@ -129,7 +130,7 @@ func (c Client) UpdateAppClient(updateRequest AppClientUpdateRequest) error {
 func (c Client) DeleteAppClient(name string) error {
 	request, err := http.NewRequest(
 		http.MethodDelete,
-		fmt.Sprintf("https://%s/app-clients/%s", c.BaseUrl, name),
+		fmt.Sprintf("https://%s/app-clients/%s", c.BaseUrl, url.QueryEscape(name)),
 		nil,
 	)
 	if err != nil {
