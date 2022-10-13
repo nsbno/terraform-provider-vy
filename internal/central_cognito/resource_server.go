@@ -144,3 +144,35 @@ func (c Client) DeleteResourceServer(identifier string) error {
 
 	return nil
 }
+
+func (c Client) ImportResourceServer(identifier string, server *ResourceServer) error {
+	request, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("https://%s/resource-servers/%s/import", c.BaseUrl, identifier),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	response, err := signedRequest(request)
+	if err != nil {
+		return err
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		str, _ := io.ReadAll(response.Body)
+
+		return errors.New(fmt.Sprintf("could not import resource. %s", str))
+
+	}
+
+	err = json.NewDecoder(response.Body).Decode(server)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

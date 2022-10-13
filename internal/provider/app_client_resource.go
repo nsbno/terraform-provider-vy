@@ -310,6 +310,32 @@ func (r appClientResource) Delete(ctx context.Context, req tfsdk.DeleteResourceR
 	resp.State.RemoveResource(ctx)
 }
 
+// ImportState imports an existing app client into the state.
+// If it doesn't find a app client in the system, it will try to import from old delegated cognito.
+//
+// Because the new system uses names as its primary key, it is dual function.
+// To import an existing app client, use the name of the app client.
+// To import from the old system, the `client_id` must be used.
 func (r appClientResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	panic("implement me")
+	var importedAppClient central_cognito.AppClient
+
+	// TODO: Try to read from the READ endpoint
+	err := r.provider.Client.ReadAppClient(req.ID, &importedAppClient)
+
+	if err != nil {
+		err = r.provider.Client.ImportAppClient(req.ID, &importedAppClient)
+
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to import app client",
+				fmt.Sprintf("The app client could not be found in the new or old delegated Cognito.\nUnderlying error: %s", err),
+			)
+			return
+		}
+	}
+
+	var appClientData appClientResourceData
+	appClientResourceDataFromDomain(importedAppClient, &appClientData)
+
+	resp.State.Set(ctx, &appClientData)
 }

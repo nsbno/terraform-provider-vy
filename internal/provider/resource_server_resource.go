@@ -251,7 +251,30 @@ func (r resourceServer) Delete(ctx context.Context, request tfsdk.DeleteResource
 	response.State.RemoveResource(ctx)
 }
 
-func (r resourceServer) ImportState(ctx context.Context, request tfsdk.ImportResourceStateRequest, response *tfsdk.ImportResourceStateResponse) {
-	//TODO implement me
-	panic("implement me")
+// ImportState imports an existing resource into state.
+// It will try to import the resource server from the old delegated cognito if not found.
+func (r resourceServer) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
+	var importedResourceServer central_cognito.ResourceServer
+
+	err := r.provider.Client.ReadResourceServer(req.ID, &importedResourceServer)
+	if err != nil {
+		err = r.provider.Client.ImportResourceServer(req.ID, &importedResourceServer)
+
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to import resource server",
+				fmt.Sprintf(
+					"The resource server could not be found in the old or new delegated cognito.\n"+
+						"Underlying error: %s",
+					err,
+				),
+			)
+			return
+		}
+	}
+
+	var resourceServerData resourceServerData
+	domainToState(importedResourceServer, &resourceServerData)
+
+	resp.State.Set(ctx, &resourceServerData)
 }
