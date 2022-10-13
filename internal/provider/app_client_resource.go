@@ -319,7 +319,6 @@ func (r appClientResource) Delete(ctx context.Context, req tfsdk.DeleteResourceR
 func (r appClientResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
 	var importedAppClient central_cognito.AppClient
 
-	// TODO: Try to read from the READ endpoint
 	err := r.provider.Client.ReadAppClient(req.ID, &importedAppClient)
 
 	if err != nil {
