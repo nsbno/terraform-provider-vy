@@ -152,11 +152,22 @@ func (c Client) DeleteAppClient(name string) error {
 	return nil
 }
 
-func (c Client) ImportAppClient(name string, server *AppClient) error {
+type ImportAppClientRequest struct {
+	ClientId string `json:"client_id"`
+}
+
+func (c Client) ImportAppClient(client_id string, server *AppClient) error {
+	var data bytes.Buffer
+
+	err := json.NewEncoder(&data).Encode(ImportAppClientRequest{client_id})
+	if err != nil {
+		return err
+	}
+
 	request, err := http.NewRequest(
 		http.MethodPost,
-		fmt.Sprintf("https://%s/app-clients/%s/import", c.BaseUrl, name),
-		nil,
+		fmt.Sprintf("https://%s/import/app-clients", c.BaseUrl),
+		&data,
 	)
 	if err != nil {
 		return err

@@ -145,11 +145,22 @@ func (c Client) DeleteResourceServer(identifier string) error {
 	return nil
 }
 
+type ImportResourceServerRequest struct {
+	Identifier string `json:"identifier"`
+}
+
 func (c Client) ImportResourceServer(identifier string, server *ResourceServer) error {
+	var data bytes.Buffer
+
+	err := json.NewEncoder(&data).Encode(ImportResourceServerRequest{identifier})
+	if err != nil {
+		return err
+	}
+
 	request, err := http.NewRequest(
 		http.MethodPost,
-		fmt.Sprintf("https://%s/resource-servers/%s/import", c.BaseUrl, identifier),
-		nil,
+		fmt.Sprintf("https://%s/import/resource-servers", c.BaseUrl),
+		&data,
 	)
 	if err != nil {
 		return err
