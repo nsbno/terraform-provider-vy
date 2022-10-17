@@ -151,8 +151,19 @@ func (ac appClientResourceData) toDomain(domain *central_cognito.AppClient) {
 	domain.Name = ac.Name.Value
 	domain.Scopes = ac.Scopes
 	domain.Type = ac.Type.Value
-	domain.CallbackUrls = ac.CallbackUrls
-	domain.LogoutUrls = ac.LogoutUrls
+
+	// The remote expects it to always be a list.
+	if ac.CallbackUrls == nil {
+		domain.CallbackUrls = []string{}
+	} else {
+		domain.CallbackUrls = ac.CallbackUrls
+	}
+
+	if ac.LogoutUrls == nil {
+		domain.LogoutUrls = []string{}
+	} else {
+		domain.LogoutUrls = ac.LogoutUrls
+	}
 
 	if !ac.GenerateSecret.Null {
 		domain.GenerateSecret = &ac.GenerateSecret.Value
@@ -165,8 +176,20 @@ func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *ap
 	state.Name.Value = domain.Name
 	state.Scopes = domain.Scopes
 	state.Type.Value = domain.Type
-	state.CallbackUrls = domain.CallbackUrls
-	state.LogoutUrls = domain.LogoutUrls
+
+	// If the config is empty on our side, terraform expects a null, not an empty list.
+	// There is probably a better way to handle this, but I can't find anything in the docs.
+	if len(domain.CallbackUrls) == 0 {
+		state.CallbackUrls = nil
+	} else {
+		state.CallbackUrls = domain.CallbackUrls
+	}
+
+	if len(domain.LogoutUrls) == 0 {
+		state.LogoutUrls = nil
+	} else {
+		state.LogoutUrls = domain.LogoutUrls
+	}
 
 	if domain.GenerateSecret != nil {
 		state.GenerateSecret.Value = *domain.GenerateSecret
@@ -244,7 +267,8 @@ func (r appClientResource) Read(ctx context.Context, req tfsdk.ReadResourceReque
 		return
 	}
 
-	appClientResourceDataFromDomain(server, &data)
+	var newState appClientResourceData
+	appClientResourceDataFromDomain(server, &newState)
 
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
