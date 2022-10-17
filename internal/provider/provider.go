@@ -19,6 +19,8 @@ type provider struct {
 	// implementations can then make calls using this Client.
 	Client central_cognito.Client
 
+	CentralCognitoEnvironment string
+
 	EnrollAccountClient enroll_account.Client
 
 	// configured is set to true at the end of the Configure method.
@@ -71,6 +73,8 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		return
 	}
 
+	p.CentralCognitoEnvironment = data.Environment.Value
+
 	if data.CentralCognitoBaseUrl.Null {
 		data.CentralCognitoBaseUrl.Value = "cognito.vydev.io"
 		data.CentralCognitoBaseUrl.Null = false
@@ -105,7 +109,9 @@ func (p *provider) GetResources(ctx context.Context) (map[string]tfsdk.ResourceT
 }
 
 func (p *provider) GetDataSources(ctx context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
-	return map[string]tfsdk.DataSourceType{}, nil
+	return map[string]tfsdk.DataSourceType{
+		"vy_cognito_info": cognitoInfoDatasourceType{},
+	}, nil
 }
 
 func New(version string) func() tfsdk.Provider {
