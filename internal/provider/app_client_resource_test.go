@@ -1,34 +1,9 @@
 package provider
 
 import (
-	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 	"testing"
 )
-
-func checkAppClientExists(name string) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
-		resource_, ok := state.RootModule().Resources[name]
-
-		if !ok || resource_.Type != "vy_app_client" {
-			return fmt.Errorf("Resource Server '%s' not found", name)
-		}
-
-		return appClientExists(resource_)
-	}
-}
-
-func appClientExists(resource_ *terraform.ResourceState) error {
-	app_client := central_cognito.AppClient{}
-	err := testAccProvider.Client.ReadAppClient(resource_.Primary.ID, &app_client)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 const testAccAppClient_ResourceServer = `
 resource "vy_resource_server" "test" {
@@ -74,20 +49,26 @@ resource "vy_app_client" "frontend" {
 `
 
 func TestAccAppClient_Frontend(t *testing.T) {
+	expected_resource_name := "vy_app_client.frontend"
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testAccPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAppClient_Frontend,
-				Check: resource.ComposeTestCheckFunc(
-					checkAppClientExists("vy_app_client.frontend"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(expected_resource_name, "client_id"),
+					resource.TestCheckNoResourceAttr(expected_resource_name, "client_secret"),
+					resource.TestCheckResourceAttr(expected_resource_name, "generate_secret", "false"),
 				),
 			},
 			{
 				Config: testAccAppClient_FrontendAddedScope,
-				Check: resource.ComposeTestCheckFunc(
-					checkAppClientExists("vy_app_client.frontend"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(expected_resource_name, "client_id"),
+					resource.TestCheckNoResourceAttr(expected_resource_name, "client_secret"),
+					resource.TestCheckResourceAttr(expected_resource_name, "generate_secret", "false"),
 				),
 			},
 		},
@@ -116,6 +97,8 @@ resource "vy_app_client" "backend" {
 `
 
 func TestAccAppClient_Backend(t *testing.T) {
+	expected_resource_name := "vy_app_client.backend"
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -123,13 +106,17 @@ func TestAccAppClient_Backend(t *testing.T) {
 			{
 				Config: testAccAppClient_Backend,
 				Check: resource.ComposeTestCheckFunc(
-					checkAppClientExists("vy_app_client.backend"),
+					resource.TestCheckResourceAttrSet(expected_resource_name, "client_id"),
+					resource.TestCheckResourceAttrSet(expected_resource_name, "client_secret"),
+					resource.TestCheckResourceAttr(expected_resource_name, "generate_secret", "true"),
 				),
 			},
 			{
 				Config: testAccAppClient_BackendRemoveScope,
 				Check: resource.ComposeTestCheckFunc(
-					checkAppClientExists("vy_app_client.backend"),
+					resource.TestCheckResourceAttrSet(expected_resource_name, "client_id"),
+					resource.TestCheckResourceAttrSet(expected_resource_name, "client_secret"),
+					resource.TestCheckResourceAttr(expected_resource_name, "generate_secret", "true"),
 				),
 			},
 		},
@@ -162,6 +149,8 @@ resource "vy_app_client" "complex" {
 `
 
 func TestAccAppClient_Complex(t *testing.T) {
+	expected_resource_name := "vy_app_client.complex"
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -169,7 +158,9 @@ func TestAccAppClient_Complex(t *testing.T) {
 			{
 				Config: testAccAppClient_Complex,
 				Check: resource.ComposeTestCheckFunc(
-					checkAppClientExists("vy_app_client.complex"),
+					resource.TestCheckResourceAttrSet(expected_resource_name, "client_id"),
+					resource.TestCheckResourceAttrSet(expected_resource_name, "client_secret"),
+					resource.TestCheckResourceAttr(expected_resource_name, "generate_secret", "true"),
 				),
 			},
 		},

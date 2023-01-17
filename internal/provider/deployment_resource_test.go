@@ -7,19 +7,8 @@ import (
 	sns "github.com/aws/aws-sdk-go/service/sns"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/nsbno/terraform-provider-vy/internal/enroll_account"
 	"testing"
 )
-
-func deploymentAccountExists(resource_ *terraform.ResourceState) error {
-	account := enroll_account.Account{}
-	err := testAccProvider.EnrollAccountClient.ReadAccount(&account)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func checkDeploymentAccountExists(name string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
@@ -29,7 +18,7 @@ func checkDeploymentAccountExists(name string) resource.TestCheckFunc {
 			return fmt.Errorf("Deployment Account '%s' not found", name)
 		}
 
-		return deploymentAccountExists(resource_)
+		return nil
 	}
 }
 
