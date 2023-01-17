@@ -1,49 +1,9 @@
 package provider
 
 import (
-	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 	"testing"
 )
-
-func checkResourceServerDestroy(state *terraform.State) error {
-	for _, resource_ := range state.RootModule().Resources {
-		if resource_.Type != "vy_resource_server" {
-			continue
-		}
-
-		err := resourceServerExists(resource_)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func checkResourceServerExists(name string) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
-		resource_, ok := state.RootModule().Resources[name]
-
-		if !ok || resource_.Type != "vy_resource_server" {
-			return fmt.Errorf("Resource Server '%s' not found", name)
-		}
-
-		return resourceServerExists(resource_)
-	}
-}
-
-func resourceServerExists(resource_ *terraform.ResourceState) error {
-	resource_server := central_cognito.ResourceServer{}
-	err := testAccProvider.Client.ReadResourceServer(resource_.Primary.ID, &resource_server)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 const testAccResourceServer_WithoutScopes = testAcc_ProviderConfig + `
 resource "vy_resource_server" "test" {
@@ -71,6 +31,8 @@ resource "vy_resource_server" "test" {
 `
 
 func TestAccResourceServer_Basic(t *testing.T) {
+	expected_resource_name := "vy_resource_server.test"
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -78,7 +40,7 @@ func TestAccResourceServer_Basic(t *testing.T) {
 			{
 				Config: testAccResourceServer_WithoutScopes,
 				Check: resource.ComposeTestCheckFunc(
-					checkResourceServerExists("vy_resource_server.test"),
+					resource.TestCheckResourceAttr(expected_resource_name, "scopes.#", "0"),
 				),
 			},
 		},
@@ -86,6 +48,8 @@ func TestAccResourceServer_Basic(t *testing.T) {
 }
 
 func TestAccResourceServer_WithScopes(t *testing.T) {
+	expected_resource_name := "vy_resource_server.test"
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -93,7 +57,7 @@ func TestAccResourceServer_WithScopes(t *testing.T) {
 			{
 				Config: testAccResourceServer_WithScopes,
 				Check: resource.ComposeTestCheckFunc(
-					checkResourceServerExists("vy_resource_server.test"),
+					resource.TestCheckResourceAttr(expected_resource_name, "scopes.#", "2"),
 				),
 			},
 		},

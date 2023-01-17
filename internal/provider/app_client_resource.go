@@ -3,135 +3,57 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type typeAttributeValidator struct{}
+var _ validator.String = frontendOrBackendValidator{}
 
-func (t typeAttributeValidator) Description(ctx context.Context) string {
+type frontendOrBackendValidator struct{}
+
+func (t frontendOrBackendValidator) Description(ctx context.Context) string {
 	return "type must be either 'frontend' or 'backend'"
 }
 
-func (t typeAttributeValidator) MarkdownDescription(ctx context.Context) string {
+func (t frontendOrBackendValidator) MarkdownDescription(ctx context.Context) string {
 	return "type must be either `frontend` or `backend`"
 }
 
-func (t typeAttributeValidator) Validate(ctx context.Context, request tfsdk.ValidateAttributeRequest, response *tfsdk.ValidateAttributeResponse) {
-	var str types.String
+func (t frontendOrBackendValidator) ValidateString(ctx context.Context, request validator.StringRequest, response *validator.StringResponse) {
+	var str = request.ConfigValue
 
-	diags := tfsdk.ValueAs(ctx, request.AttributeConfig, &str)
-	response.Diagnostics.Append(diags...)
-	if diags.HasError() {
+	if str.IsUnknown() || str.IsNull() {
 		return
 	}
 
-	if str.Unknown || str.Null {
-		return
-	}
-
-	if str.Value != "frontend" && str.Value != "backend" {
+	if str.ValueString() != "frontend" && str.ValueString() != "backend" {
 		response.Diagnostics.AddAttributeError(
-			request.AttributePath,
+			request.Path,
 			"Invalid app client type",
-			fmt.Sprintf("The app client must either be 'frontend' or 'backend'. Got: '%s'.", str.Value),
+			fmt.Sprintf("The app client must either be 'frontend' or 'backend'. Got: '%s'.", str.ValueString()),
 		)
 
 		return
 	}
 }
 
-type appClientResourceType struct{}
-
-func (t appClientResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		MarkdownDescription: "An app client, used to access resource servers.",
-
-		Attributes: map[string]tfsdk.Attribute{
-			// id is required by the SDKv2 testing framework.
-			// See https://www.terraform.io/plugin/framework/acctests#implement-id-attribute
-			// TODO: Later, this is probably going to be the generated ID from cognito.
-			"id": {
-				Type: types.StringType,
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					tfsdk.UseStateForUnknown(),
-				},
-				Computed: true,
-			},
-			"name": {
-				MarkdownDescription: "The name of this app client",
-				Required:            true,
-				Type:                types.StringType,
-			},
-			"scopes": {
-				MarkdownDescription: "Scopes that this client has access to",
-				Optional:            true,
-				Type:                types.SetType{ElemType: types.StringType},
-			},
-			"type": {
-				MarkdownDescription: "The use-case for this app client. Used to automatically add OAuth options",
-				Required:            true,
-				Type:                types.StringType,
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					tfsdk.RequiresReplace(),
-				},
-				Validators: []tfsdk.AttributeValidator{
-					typeAttributeValidator{},
-				},
-			},
-			"callback_urls": {
-				MarkdownDescription: "Callback URLs to use. Used together with `type` set to `frontend`.",
-				Optional:            true,
-				Type:                types.ListType{ElemType: types.StringType},
-			},
-			"logout_urls": {
-				MarkdownDescription: "Logout URLs to use. Used together with `type` set to `frontend`.",
-				Optional:            true,
-				Type:                types.ListType{ElemType: types.StringType},
-			},
-			"generate_secret": {
-				MarkdownDescription: "Should a secret be generated? Automatically set by `type`, but you're able to override it with this option.",
-				Optional:            true,
-				Computed:            true, // The backend can change it if it is not set by the user.
-				Type:                types.BoolType,
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					tfsdk.RequiresReplace(),
-					tfsdk.UseStateForUnknown(),
-				},
-			},
-			"client_id": {
-				MarkdownDescription: "The ID used for your client to authenticate itself. ",
-				Computed:            true,
-				Type:                types.StringType,
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					tfsdk.UseStateForUnknown(),
-				},
-			},
-			"client_secret": {
-				MarkdownDescription: "A secret used for your client to authenticate itself. " +
-					"Only populated when using the `backend` type.",
-				Computed: true,
-				Type:     types.StringType,
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					tfsdk.UseStateForUnknown(),
-				},
-			},
-		},
-	}, nil
+func NewAppClientResource() resource.Resource {
+	return &AppClientResource{}
 }
 
-func (t appClientResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return appClientResource{
-		provider: provider,
-	}, diags
+type AppClientResource struct {
+	client *central_cognito.Client
 }
 
-type appClientResourceData struct {
+type AppClientResourceModel struct {
 	Id             types.String `tfsdk:"id"`
 	Name           types.String `tfsdk:"name"`
 	Scopes         []string     `tfsdk:"scopes"`
@@ -143,14 +65,105 @@ type appClientResourceData struct {
 	ClientSecret   types.String `tfsdk:"client_secret"`
 }
 
-type appClientResource struct {
-	provider provider
+func (r *AppClientResource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+	response.TypeName = request.ProviderTypeName + "_app_client"
 }
 
-func (ac appClientResourceData) toDomain(domain *central_cognito.AppClient) {
-	domain.Name = ac.Name.Value
+func (r *AppClientResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
+	response.Schema = schema.Schema{
+		MarkdownDescription: "An app client, used to access resource servers.",
+
+		Attributes: map[string]schema.Attribute{
+			// id is required by the SDKv2 testing framework.
+			// See https://www.terraform.io/plugin/framework/acctests#implement-id-attribute
+			// TODO: Later, this is probably going to be the generated ID from cognito.
+			"id": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "The name of this app client",
+				Required:            true,
+			},
+			"scopes": schema.SetAttribute{
+				MarkdownDescription: "Scopes that this client has access to",
+				Optional:            true,
+				ElementType:         types.StringType,
+			},
+			"type": schema.StringAttribute{
+				MarkdownDescription: "The use-case for this app client. Used to automatically add OAuth options",
+				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					frontendOrBackendValidator{},
+				},
+			},
+			"callback_urls": schema.ListAttribute{
+				MarkdownDescription: "Callback URLs to use. Used together with `type` set to `frontend`.",
+				Optional:            true,
+				ElementType:         types.StringType,
+			},
+			"logout_urls": schema.ListAttribute{
+				MarkdownDescription: "Logout URLs to use. Used together with `type` set to `frontend`.",
+				Optional:            true,
+				ElementType:         types.StringType,
+			},
+			"generate_secret": schema.BoolAttribute{
+				MarkdownDescription: "Should a secret be generated? Automatically set by `type`, but you're able to override it with this option.",
+				Optional:            true,
+				Computed:            true, // The backend can change it if it is not set by the user.
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"client_id": schema.StringAttribute{
+				MarkdownDescription: "The ID used for your client to authenticate itself. ",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"client_secret": schema.StringAttribute{
+				MarkdownDescription: "A secret used for your client to authenticate itself. " +
+					"Only populated when using the `backend` type.",
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+		},
+	}
+}
+
+func (c *AppClientResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if request.ProviderData == nil {
+		return
+	}
+
+	configuration, ok := request.ProviderData.(*VyProviderConfiguration)
+
+	if !ok {
+		response.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected *VyProviderConfiguration, got: %T. Please report this issue to the provider developers.", request.ProviderData),
+		)
+
+		return
+	}
+
+	c.client = configuration.CognitoClient
+}
+
+func (ac AppClientResourceModel) toDomain(domain *central_cognito.AppClient) {
+	domain.Name = ac.Name.ValueString()
 	domain.Scopes = ac.Scopes
-	domain.Type = ac.Type.Value
+	domain.Type = ac.Type.ValueString()
 
 	// The remote expects it to always be a list.
 	if ac.CallbackUrls == nil {
@@ -165,17 +178,17 @@ func (ac appClientResourceData) toDomain(domain *central_cognito.AppClient) {
 		domain.LogoutUrls = ac.LogoutUrls
 	}
 
-	if !ac.GenerateSecret.Null {
-		domain.GenerateSecret = &ac.GenerateSecret.Value
+	if !ac.GenerateSecret.IsNull() {
+		value := ac.GenerateSecret.ValueBool()
+		domain.GenerateSecret = &value
 	}
 }
 
-func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *appClientResourceData) {
-	state.Id.Value = domain.Name
-	state.Id.Null = false
-	state.Name.Value = domain.Name
+func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *AppClientResourceModel) {
+	state.Id = types.StringValue(domain.Name)
+	state.Name = types.StringValue(domain.Name)
 	state.Scopes = domain.Scopes
-	state.Type.Value = domain.Type
+	state.Type = types.StringValue(domain.Type)
 
 	// If the config is empty on our side, terraform expects a null, not an empty list.
 	// There is probably a better way to handle this, but I can't find anything in the docs.
@@ -192,26 +205,20 @@ func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *ap
 	}
 
 	if domain.GenerateSecret != nil {
-		state.GenerateSecret.Value = *domain.GenerateSecret
-		state.GenerateSecret.Null = false
-		state.GenerateSecret.Unknown = false
+		state.GenerateSecret = types.BoolValue(*domain.GenerateSecret)
 	}
 
 	if domain.ClientId != nil {
-		state.ClientId.Value = *domain.ClientId
-		state.ClientId.Null = false
-		state.ClientId.Unknown = false
+		state.ClientId = types.StringValue(*domain.ClientId)
 	}
 
 	if domain.ClientSecret != nil {
-		state.ClientSecret.Value = *domain.ClientSecret
-		state.ClientSecret.Null = false
-		state.ClientSecret.Unknown = false
+		state.ClientSecret = types.StringValue(*domain.ClientSecret)
 	}
 }
 
-func (r appClientResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
-	var data appClientResourceData
+func (r AppClientResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data AppClientResourceModel
 
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
@@ -220,13 +227,12 @@ func (r appClientResource) Create(ctx context.Context, req tfsdk.CreateResourceR
 		return
 	}
 
-	data.Id.Value = data.Name.Value
-	data.Id.Null = false
+	data.Id = data.Name
 
 	var appClient central_cognito.AppClient
 	data.toDomain(&appClient)
 
-	var createdAppClient, err = r.provider.Client.CreateAppClient(appClient)
+	var createdAppClient, err = r.client.CreateAppClient(appClient)
 	if err != nil {
 		diags = diag.Diagnostics{}
 		diags.AddError(
@@ -238,15 +244,15 @@ func (r appClientResource) Create(ctx context.Context, req tfsdk.CreateResourceR
 		return
 	}
 
-	var createdAppClientResource appClientResourceData
+	var createdAppClientResource AppClientResourceModel
 	appClientResourceDataFromDomain(*createdAppClient, &createdAppClientResource)
 
 	diags = resp.State.Set(ctx, &createdAppClientResource)
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r appClientResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
-	var data appClientResourceData
+func (r AppClientResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data AppClientResourceModel
 
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
@@ -256,41 +262,49 @@ func (r appClientResource) Read(ctx context.Context, req tfsdk.ReadResourceReque
 	}
 
 	var server central_cognito.AppClient
-	err := r.provider.Client.ReadAppClient(data.Name.Value, &server)
+	err := r.client.ReadAppClient(data.Name.ValueString(), &server)
 	if err != nil {
 		diags = diag.Diagnostics{}
 		diags.AddError(
 			"Unable to read resource server",
-			fmt.Sprintf("Can't read resource server %s from remote: %s ", data.Name.Value, err.Error()),
+			fmt.Sprintf("Can't read resource server %s from remote: %s ", data.Name.ValueString(), err.Error()),
 		)
 		resp.Diagnostics.Append(diags...)
 		return
 	}
 
-	var newState appClientResourceData
+	var newState AppClientResourceModel
 	appClientResourceDataFromDomain(server, &newState)
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, &newState)
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r appClientResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
-	var data appClientResourceData
+func (r AppClientResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data AppClientResourceModel
+	var state AppClientResourceModel
 
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	// I don't know why, but after the upgrade to the new terraform provider framework,
+	// null values are still marked as unkown in the plan.
+	if data.ClientSecret.IsUnknown() && state.ClientSecret.IsNull() {
+		data.ClientSecret = state.ClientSecret
+	}
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	data.Id.Value = data.Name.Value
-	data.Id.Null = false
+	data.Id = data.Name
 
 	var appClient central_cognito.AppClient
 	data.toDomain(&appClient)
 
-	err := r.provider.Client.UpdateAppClient(central_cognito.AppClientUpdateRequest{
+	err := r.client.UpdateAppClient(central_cognito.AppClientUpdateRequest{
 		Name:         appClient.Name,
 		Scopes:       appClient.Scopes,
 		CallbackUrls: appClient.CallbackUrls,
@@ -300,7 +314,7 @@ func (r appClientResource) Update(ctx context.Context, req tfsdk.UpdateResourceR
 		diags = diag.Diagnostics{}
 		diags.AddError(
 			"Unable to update app client",
-			fmt.Sprintf("Can't update app client %s in remote: %s ", data.Name.Value, err.Error()),
+			fmt.Sprintf("Can't update app client %s in remote: %s ", data.Name.ValueString(), err.Error()),
 		)
 		resp.Diagnostics.Append(diags...)
 		return
@@ -310,8 +324,8 @@ func (r appClientResource) Update(ctx context.Context, req tfsdk.UpdateResourceR
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r appClientResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
-	var data appClientResourceData
+func (r AppClientResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data AppClientResourceModel
 
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
@@ -320,12 +334,12 @@ func (r appClientResource) Delete(ctx context.Context, req tfsdk.DeleteResourceR
 		return
 	}
 
-	err := r.provider.Client.DeleteAppClient(data.Name.Value)
+	err := r.client.DeleteAppClient(data.Name.ValueString())
 	if err != nil {
 		diags = diag.Diagnostics{}
 		diags.AddError(
 			"Unable to delete app client",
-			fmt.Sprintf("Can't delete app client %s in remote: %s ", data.Name.Value, err.Error()),
+			fmt.Sprintf("Can't delete app client %s in remote: %s ", data.Name.ValueString(), err.Error()),
 		)
 		resp.Diagnostics.Append(diags...)
 		return
@@ -340,13 +354,13 @@ func (r appClientResource) Delete(ctx context.Context, req tfsdk.DeleteResourceR
 // Because the new system uses names as its primary key, it is dual function.
 // To import an existing app client, use the name of the app client.
 // To import from the old system, the `client_id` must be used.
-func (r appClientResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
+func (r AppClientResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	var importedAppClient central_cognito.AppClient
 
-	err := r.provider.Client.ReadAppClient(req.ID, &importedAppClient)
+	err := r.client.ReadAppClient(req.ID, &importedAppClient)
 
 	if err != nil {
-		err = r.provider.Client.ImportAppClient(req.ID, &importedAppClient)
+		err = r.client.ImportAppClient(req.ID, &importedAppClient)
 
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -357,7 +371,7 @@ func (r appClientResource) ImportState(ctx context.Context, req tfsdk.ImportReso
 		}
 	}
 
-	var appClientData appClientResourceData
+	var appClientData AppClientResourceModel
 	appClientResourceDataFromDomain(importedAppClient, &appClientData)
 
 	resp.State.Set(ctx, &appClientData)

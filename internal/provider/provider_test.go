@@ -15,12 +15,12 @@ provider "vy" {
 
 `
 
-// testAccProtoV6ProviderFactories are used to instantiate a provider during
+// testAccProtoV6ProviderFactories are used to instantiate a VyProvider during
 // acceptance testing. The factory function will be invoked for every Terraform
-// CLI command executed to create a provider server to which the CLI can
+// CLI command executed to create a VyProvider server to which the CLI can
 // reattach.
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
-	"vy": providerserver.NewProtocol6WithError(&testAccProvider),
+	"vy": providerserver.NewProtocol6WithError(testAccProvider),
 }
 
 func testAccPreCheck(t *testing.T) {

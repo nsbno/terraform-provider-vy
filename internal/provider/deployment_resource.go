@@ -3,56 +3,26 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/nsbno/terraform-provider-vy/internal/enroll_account"
 )
 
-type deploymentResourceType struct{}
-
-func (t deploymentResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		MarkdownDescription: "Register the current AWS account into the deployment service",
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
-				Type: types.StringType,
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					tfsdk.UseStateForUnknown(),
-				},
-				Computed: true,
-			},
-			"topics": {
-				MarkdownDescription: "All the topics that are required for",
-				Required:            true,
-				Attributes: tfsdk.SingleNestedAttributes(
-					map[string]tfsdk.Attribute{
-						"trigger_events": {
-							MarkdownDescription: "SNS topic ARN for all pipeline start triggers",
-							Required:            true,
-							Type:                types.StringType,
-						},
-						"pipeline_events": {
-							MarkdownDescription: "SNS topic ARN for all events from the pipeline",
-							Required:            true,
-							Type:                types.StringType,
-						},
-					},
-				),
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					tfsdk.RequiresReplace(),
-				},
-			},
-		},
-	}, nil
+func NewDeploymentResource() resource.Resource {
+	return &DeploymentResource{}
 }
 
-func (t deploymentResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
+type DeploymentResource struct {
+	client *enroll_account.Client
+}
 
-	return deploymentResource{
-		provider: provider,
-	}, diags
+type DeploymentResourceModel struct {
+	Id     types.String `tfsdk:"id"`
+	Topics topics       `tfsdk:"topics"`
 }
 
 type topics struct {
@@ -60,23 +30,69 @@ type topics struct {
 	PipelineEvents types.String `tfsdk:"pipeline_events"`
 }
 
-type deploymentResourceData struct {
-	Id     types.String `tfsdk:"id"`
-	Topics topics       `tfsdk:"topics"`
+func (r DeploymentResource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+	response.TypeName = request.ProviderTypeName + "_deployment_account"
 }
 
-type deploymentResource struct {
-	provider provider
+func (r DeploymentResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
+	response.Schema = schema.Schema{
+		MarkdownDescription: "Register the current AWS account into the deployment service",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"topics": schema.SingleNestedAttribute{
+				MarkdownDescription: "All the topics that are required for",
+				Required:            true,
+				Attributes: map[string]schema.Attribute{
+					"trigger_events": schema.StringAttribute{
+						MarkdownDescription: "SNS topic ARN for all pipeline start triggers",
+						Required:            true,
+					},
+					"pipeline_events": schema.StringAttribute{
+						MarkdownDescription: "SNS topic ARN for all events from the pipeline",
+						Required:            true,
+					},
+				},
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.RequiresReplace(),
+				},
+			},
+		},
+	}
 }
 
-func deployAccountDomainToState(account *enroll_account.Account, data *deploymentResourceData) {
-	data.Id.Value = account.AccountId
-	data.Topics.TriggerEvents.Value = account.Topics.TriggerEvents.Arn
-	data.Topics.PipelineEvents.Value = account.Topics.PipelineEvents.Arn
+func (c *DeploymentResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if request.ProviderData == nil {
+		return
+	}
+
+	configuration, ok := request.ProviderData.(*VyProviderConfiguration)
+
+	if !ok {
+		response.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected *VyProviderConfiguration, got: %T. Please report this issue to the provider developers.", request.ProviderData),
+		)
+
+		return
+	}
+
+	c.client = configuration.EnrollAccountClient
 }
 
-func (d deploymentResource) Create(ctx context.Context, request tfsdk.CreateResourceRequest, response *tfsdk.CreateResourceResponse) {
-	var data deploymentResourceData
+func deployAccountDomainToState(account *enroll_account.Account, data *DeploymentResourceModel) {
+	data.Id = types.StringValue(account.AccountId)
+	data.Topics.TriggerEvents = types.StringValue(account.Topics.TriggerEvents.Arn)
+	data.Topics.PipelineEvents = types.StringValue(account.Topics.PipelineEvents.Arn)
+}
+
+func (d DeploymentResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
+	var data DeploymentResourceModel
 
 	diags := request.Config.Get(ctx, &data)
 	response.Diagnostics.Append(diags...)
@@ -85,10 +101,10 @@ func (d deploymentResource) Create(ctx context.Context, request tfsdk.CreateReso
 		return
 	}
 
-	created, err := d.provider.EnrollAccountClient.CreateAccount(
+	created, err := d.client.CreateAccount(
 		enroll_account.Topics{
-			TriggerEvents:  enroll_account.Topic{Arn: data.Topics.TriggerEvents.Value},
-			PipelineEvents: enroll_account.Topic{Arn: data.Topics.PipelineEvents.Value},
+			TriggerEvents:  enroll_account.Topic{Arn: data.Topics.TriggerEvents.ValueString()},
+			PipelineEvents: enroll_account.Topic{Arn: data.Topics.PipelineEvents.ValueString()},
 		},
 	)
 	if err != nil {
@@ -100,15 +116,15 @@ func (d deploymentResource) Create(ctx context.Context, request tfsdk.CreateReso
 		return
 	}
 
-	var createdData deploymentResourceData
+	var createdData DeploymentResourceModel
 	deployAccountDomainToState(created, &createdData)
 
 	diags = response.State.Set(ctx, &createdData)
 	response.Diagnostics.Append(diags...)
 }
 
-func (d deploymentResource) Read(ctx context.Context, request tfsdk.ReadResourceRequest, response *tfsdk.ReadResourceResponse) {
-	var data deploymentResourceData
+func (d DeploymentResource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
+	var data DeploymentResourceModel
 
 	diags := request.State.Get(ctx, &data)
 	response.Diagnostics.Append(diags...)
@@ -118,7 +134,7 @@ func (d deploymentResource) Read(ctx context.Context, request tfsdk.ReadResource
 	}
 
 	var readData enroll_account.Account
-	err := d.provider.EnrollAccountClient.ReadAccount(&readData)
+	err := d.client.ReadAccount(&readData)
 
 	if err != nil {
 		response.Diagnostics.AddError(
@@ -134,8 +150,8 @@ func (d deploymentResource) Read(ctx context.Context, request tfsdk.ReadResource
 	response.Diagnostics.Append(diags...)
 }
 
-func (d deploymentResource) Update(ctx context.Context, request tfsdk.UpdateResourceRequest, response *tfsdk.UpdateResourceResponse) {
-	var data deploymentResourceData
+func (d DeploymentResource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
+	var data DeploymentResourceModel
 
 	diags := request.Plan.Get(ctx, &data)
 	response.Diagnostics.Append(diags...)
@@ -151,8 +167,8 @@ func (d deploymentResource) Update(ctx context.Context, request tfsdk.UpdateReso
 	response.Diagnostics.Append(diags...)
 }
 
-func (d deploymentResource) Delete(ctx context.Context, request tfsdk.DeleteResourceRequest, response *tfsdk.DeleteResourceResponse) {
-	var data deploymentResourceData
+func (d DeploymentResource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
+	var data DeploymentResourceModel
 
 	diags := request.State.Get(ctx, &data)
 	response.Diagnostics.Append(diags...)
@@ -161,7 +177,7 @@ func (d deploymentResource) Delete(ctx context.Context, request tfsdk.DeleteReso
 		return
 	}
 
-	err := d.provider.EnrollAccountClient.DeleteAccount()
+	err := d.client.DeleteAccount()
 	if err != nil {
 		response.Diagnostics.AddError(
 			"Could not delete account",

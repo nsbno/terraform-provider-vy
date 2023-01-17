@@ -2,114 +2,134 @@ package provider
 
 import (
 	"context"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 )
 
-type cognitoInfoDatasourceType struct{}
+var _ datasource.DataSource = &CognitoInfoDataSource{}
 
-func (c cognitoInfoDatasourceType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
-				Type:     types.StringType,
-				Computed: true,
-			},
-			"auth_url": {
-				Type:                types.StringType,
-				Computed:            true,
-				MarkdownDescription: "The URL where users can authenticate",
-			},
-			"jwks_url": {
-				Type:                types.StringType,
-				Computed:            true,
-				MarkdownDescription: "The URL for the /.well-known/jwks.json",
-			},
-			"open_id_url": {
-				Type:                types.StringType,
-				Computed:            true,
-				MarkdownDescription: "The URL for the /.well-known/openid-configuration",
-			},
-		},
-	}, nil
+func NewCognitoInfoDataSource() datasource.DataSource {
+	return &CognitoInfoDataSource{}
 }
 
-func (c cognitoInfoDatasourceType) NewDataSource(_ context.Context, p tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {
-	provider, diags := convertProviderType(p)
-
-	return cognitoInfo{
-		provider: provider,
-	}, diags
+type CognitoInfoDataSource struct {
+	environment string
+	client      *central_cognito.Client
 }
 
-type cognitoInfo struct {
-	provider provider
-}
-
-type cognitoInfoData struct {
+type CognitoInfoDataSourceModel struct {
 	Id        types.String `tfsdk:"id"`
 	AuthUrl   types.String `tfsdk:"auth_url"`
 	JwksUrl   types.String `tfsdk:"jwks_url"`
 	OpenIdUrl types.String `tfsdk:"open_id_url"`
 }
 
-func (c cognitoInfo) Read(ctx context.Context, request tfsdk.ReadDataSourceRequest, response *tfsdk.ReadDataSourceResponse) {
+func (c *CognitoInfoDataSource) Metadata(ctx context.Context, request datasource.MetadataRequest, response *datasource.MetadataResponse) {
+	response.TypeName = request.ProviderTypeName + "_cognito_info"
+}
+
+func (c *CognitoInfoDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
+	response.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
+			"auth_url": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The URL where users can authenticate",
+			},
+			"jwks_url": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The URL for the /.well-known/jwks.json",
+			},
+			"open_id_url": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The URL for the /.well-known/openid-configuration",
+			},
+		},
+	}
+}
+
+func (c *CognitoInfoDataSource) Configure(ctx context.Context, request datasource.ConfigureRequest, response *datasource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if request.ProviderData == nil {
+		return
+	}
+
+	configuration, ok := request.ProviderData.(*VyProviderConfiguration)
+
+	if !ok {
+		response.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected *VyProviderConfiguration, got: %T. Please report this issue to the provider developers.", request.ProviderData),
+		)
+
+		return
+	}
+
+	c.environment = configuration.Environment
+	c.client = configuration.CognitoClient
+}
+
+func (c *CognitoInfoDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
 	// TODO: This should be fetched from the service.
 	//	     Doing it quickly now to get the feature shipped.
-	var state cognitoInfoData
+	var state CognitoInfoDataSourceModel
 
-	state.Id.Value = c.provider.CentralCognitoEnvironment
-
-	if c.provider.CentralCognitoEnvironment == "prod" {
-		state = cognitoInfoData{
-			AuthUrl: types.String{
-				Value: "https://auth.cognito.vydev.io",
-			},
-			JwksUrl: types.String{
-				Value: "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE/.well-known/jwks.json",
-			},
-			OpenIdUrl: types.String{
-				Value: "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE/.well-known/openid-configuration",
-			},
+	if c.environment == "prod" {
+		state = CognitoInfoDataSourceModel{
+			AuthUrl: types.StringValue(
+				"https://auth.cognito.vydev.io",
+			),
+			JwksUrl: types.StringValue(
+				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE/.well-known/jwks.json",
+			),
+			OpenIdUrl: types.StringValue(
+				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE/.well-known/openid-configuration",
+			),
 		}
-	} else if c.provider.CentralCognitoEnvironment == "stage" {
-		state = cognitoInfoData{
-			AuthUrl: types.String{
-				Value: "https://auth.stage.cognito.vydev.io",
-			},
-			JwksUrl: types.String{
-				Value: "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW/.well-known/jwks.json",
-			},
-			OpenIdUrl: types.String{
-				Value: "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW/.well-known/openid-configuration",
-			},
+	} else if c.environment == "stage" {
+		state = CognitoInfoDataSourceModel{
+			AuthUrl: types.StringValue(
+				"https://auth.stage.cognito.vydev.io",
+			),
+			JwksUrl: types.StringValue(
+				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW/.well-known/jwks.json",
+			),
+			OpenIdUrl: types.StringValue(
+				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW/.well-known/openid-configuration",
+			),
 		}
-	} else if c.provider.CentralCognitoEnvironment == "test" {
-		state = cognitoInfoData{
-			AuthUrl: types.String{
-				Value: "https://auth.test.cognito.vydev.io",
-			},
-			JwksUrl: types.String{
-				Value: "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT/.well-known/jwks.json",
-			},
-			OpenIdUrl: types.String{
-				Value: "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT/.well-known/openid-configuration",
-			},
+	} else if c.environment == "test" {
+		state = CognitoInfoDataSourceModel{
+			AuthUrl: types.StringValue(
+				"https://auth.test.cognito.vydev.io",
+			),
+			JwksUrl: types.StringValue(
+				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT/.well-known/jwks.json",
+			),
+			OpenIdUrl: types.StringValue(
+				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT/.well-known/openid-configuration",
+			),
 		}
-	} else if c.provider.CentralCognitoEnvironment == "dev" {
-		state = cognitoInfoData{
-			AuthUrl: types.String{
-				Value: "https://auth.dev.cognito.vydev.io",
-			},
-			JwksUrl: types.String{
-				Value: "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk/.well-known/jwks.json",
-			},
-			OpenIdUrl: types.String{
-				Value: "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk/.well-known/openid-configuration",
-			},
+	} else if c.environment == "dev" {
+		state = CognitoInfoDataSourceModel{
+			AuthUrl: types.StringValue(
+				"https://auth.dev.cognito.vydev.io",
+			),
+			JwksUrl: types.StringValue(
+				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk/.well-known/jwks.json",
+			),
+			OpenIdUrl: types.StringValue(
+				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk/.well-known/openid-configuration",
+			),
 		}
 	}
+
+	state.Id = types.StringValue(c.environment)
 
 	response.State.Set(ctx, &state)
 }
