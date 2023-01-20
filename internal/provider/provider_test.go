@@ -11,6 +11,7 @@ var testAccProvider, _ = convertProviderType(New("test")())
 const testAcc_ProviderConfig = `
 provider "vy" {
 	environment = "test"
+	deployment_service_environment = "test"
 }
 
 `

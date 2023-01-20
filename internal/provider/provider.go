@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 	"github.com/nsbno/terraform-provider-vy/internal/enroll_account"
+	"github.com/nsbno/terraform-provider-vy/internal/version_handler"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -28,16 +29,18 @@ type VyProvider struct {
 }
 
 type VyProviderConfiguration struct {
-	Environment         string
-	CognitoClient       *central_cognito.Client
-	EnrollAccountClient *enroll_account.Client
+	Environment          string
+	CognitoClient        *central_cognito.Client
+	EnrollAccountClient  *enroll_account.Client
+	VersionHandlerClient *version_handler.Client
 }
 
 // VyProviderModel can be used to store data from the Terraform configuration.
 type VyProviderModel struct {
-	CentralCognitoBaseUrl types.String `tfsdk:"central_cognito_base_url"`
-	EnrollAccountBaseUrl  types.String `tfsdk:"enroll_account_base_url"`
-	Environment           types.String `tfsdk:"environment"`
+	CentralCognitoBaseUrl        types.String `tfsdk:"central_cognito_base_url"`
+	EnrollAccountBaseUrl         types.String `tfsdk:"enroll_account_base_url"`
+	Environment                  types.String `tfsdk:"environment"`
+	DeploymentServiceEnvironment types.String `tfsdk:"deployment_service_environment"`
 }
 
 func (p VyProvider) Metadata(ctx context.Context, request provider.MetadataRequest, response *provider.MetadataResponse) {
@@ -60,6 +63,10 @@ func (p VyProvider) Schema(ctx context.Context, request provider.SchemaRequest, 
 			"environment": schema.StringAttribute{
 				MarkdownDescription: "The environment to provision in",
 				Required:            true,
+			},
+			"deployment_service_environment": schema.StringAttribute{
+				MarkdownDescription: "The environment of the deployment service (this should be left blank unless you're testing the deployment service)",
+				Optional:            true,
 			},
 		},
 	}
@@ -87,9 +94,18 @@ func (p VyProvider) Configure(ctx context.Context, request provider.ConfigureReq
 		cognito_domain = data.CentralCognitoBaseUrl.ValueString()
 	}
 
-	deployment_domain := "vydeployment.vydev.io"
+	enroll_account_domain := "vydeployment.vydev.io"
 	if !data.EnrollAccountBaseUrl.IsNull() {
-		deployment_domain = data.EnrollAccountBaseUrl.ValueString()
+		enroll_account_domain = data.EnrollAccountBaseUrl.ValueString()
+	}
+
+	deployment_service_environment := "prod"
+	if !data.DeploymentServiceEnvironment.IsNull() {
+		response.Diagnostics.AddWarning(
+			"Non-prod deployment service environment",
+			"You have selected a non-prod deployment service environment. This should only be done while testing the deployment service.",
+		)
+		deployment_service_environment = data.DeploymentServiceEnvironment.ValueString()
 	}
 
 	cognito_client := &central_cognito.Client{
@@ -97,13 +113,18 @@ func (p VyProvider) Configure(ctx context.Context, request provider.ConfigureReq
 	}
 
 	enroll_client := &enroll_account.Client{
-		BaseUrl: createUrlFromEnvironment(deployment_domain, "enroll", data.Environment.ValueString()),
+		BaseUrl: createUrlFromEnvironment(enroll_account_domain, "enroll", deployment_service_environment),
+	}
+
+	version_client := &version_handler.Client{
+		BaseUrl: createUrlFromEnvironment(enroll_account_domain, "version-handler", deployment_service_environment),
 	}
 
 	config := &VyProviderConfiguration{
-		Environment:         data.Environment.ValueString(),
-		CognitoClient:       cognito_client,
-		EnrollAccountClient: enroll_client,
+		Environment:          data.Environment.ValueString(),
+		CognitoClient:        cognito_client,
+		EnrollAccountClient:  enroll_client,
+		VersionHandlerClient: version_client,
 	}
 
 	p.config = config
@@ -122,6 +143,7 @@ func (p VyProvider) Resources(ctx context.Context) []func() resource.Resource {
 func (p VyProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewCognitoInfoDataSource,
+		NewArtifactVersionDataSource,
 	}
 }
 

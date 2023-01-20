@@ -3,12 +3,12 @@
 page_title: "vy Provider"
 subcategory: ""
 description: |-
-  A provider for interracting with Vy's internal services.
+  A VyProvider for interracting with Vy's internal services.
 ---
 
 # vy Provider
 
-A provider for interracting with Vy's internal services.
+A VyProvider for interracting with Vy's internal services.
 
 ## Example Usage
 
@@ -28,4 +28,5 @@ provider "vy" {
 ### Optional
 
 - **central_cognito_base_url** (String) The base url for the central-cognito service
+- **deployment_service_environment** (String) The environment of the deployment service (this should be left blank unless you're testing the deployment service)
 - **enroll_account_base_url** (String) The base url for the deployment enrollment service
