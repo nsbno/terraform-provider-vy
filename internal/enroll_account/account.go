@@ -9,28 +9,19 @@ import (
 	"net/http"
 )
 
-type Topic struct {
-	Arn string `json:"arn"`
-}
-
-type Topics struct {
-	TriggerEvents  Topic `json:"trigger_events"`
-	PipelineEvents Topic `json:"pipeline_events"`
-}
-
 type Account struct {
-	AccountId string `json:"account_id"`
-	Topics    Topics `json:"topics"`
+	AccountId    string `json:"account_id"`
+	SlackChannel string `json:"slack_channel"`
 }
 
 type CreateAccountRequest struct {
-	Topics Topics `json:"topics"`
+	SlackChannel string `json:"slack_channel"`
 }
 
-func (c Client) CreateAccount(topics Topics) (*Account, error) {
+func (c Client) CreateAccount(slackChannel string) (*Account, error) {
 	var data bytes.Buffer
 
-	err := json.NewEncoder(&data).Encode(CreateAccountRequest{Topics: topics})
+	err := json.NewEncoder(&data).Encode(CreateAccountRequest{SlackChannel: slackChannel})
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +45,7 @@ func (c Client) CreateAccount(topics Topics) (*Account, error) {
 
 		str, _ := io.ReadAll(response.Body)
 
-		return nil, errors.New(fmt.Sprintf("could not create topics. %s", str))
+		return nil, errors.New(fmt.Sprintf("Could not add account. %s", str))
 	}
 
 	var createdAccount *Account

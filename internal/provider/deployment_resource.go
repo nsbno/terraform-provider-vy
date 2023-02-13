@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -21,20 +20,15 @@ type DeploymentResource struct {
 }
 
 type DeploymentResourceModel struct {
-	Id     types.String `tfsdk:"id"`
-	Topics topics       `tfsdk:"topics"`
+	Id           types.String `tfsdk:"id"`
+	SlackChannel types.String `tfsdk:"slack_channel"`
 }
 
-type topics struct {
-	TriggerEvents  types.String `tfsdk:"trigger_events"`
-	PipelineEvents types.String `tfsdk:"pipeline_events"`
-}
-
-func (r DeploymentResource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+func (d DeploymentResource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
 	response.TypeName = request.ProviderTypeName + "_deployment_account"
 }
 
-func (r DeploymentResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
+func (d DeploymentResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
 	response.Schema = schema.Schema{
 		MarkdownDescription: "Register the current AWS account into the deployment service",
 		Attributes: map[string]schema.Attribute{
@@ -44,28 +38,18 @@ func (r DeploymentResource) Schema(ctx context.Context, request resource.SchemaR
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"topics": schema.SingleNestedAttribute{
-				MarkdownDescription: "All the topics that are required for",
+			"slack_channel": schema.StringAttribute{
+				MarkdownDescription: "A Slack channel where info about deployments go",
 				Required:            true,
-				Attributes: map[string]schema.Attribute{
-					"trigger_events": schema.StringAttribute{
-						MarkdownDescription: "SNS topic ARN for all pipeline start triggers",
-						Required:            true,
-					},
-					"pipeline_events": schema.StringAttribute{
-						MarkdownDescription: "SNS topic ARN for all events from the pipeline",
-						Required:            true,
-					},
-				},
-				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.RequiresReplace(),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 		},
 	}
 }
 
-func (c *DeploymentResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (d *DeploymentResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if request.ProviderData == nil {
 		return
@@ -75,20 +59,19 @@ func (c *DeploymentResource) Configure(ctx context.Context, request resource.Con
 
 	if !ok {
 		response.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
+			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *VyProviderConfiguration, got: %T. Please report this issue to the provider developers.", request.ProviderData),
 		)
 
 		return
 	}
 
-	c.client = configuration.EnrollAccountClient
+	d.client = configuration.EnrollAccountClient
 }
 
 func deployAccountDomainToState(account *enroll_account.Account, data *DeploymentResourceModel) {
 	data.Id = types.StringValue(account.AccountId)
-	data.Topics.TriggerEvents = types.StringValue(account.Topics.TriggerEvents.Arn)
-	data.Topics.PipelineEvents = types.StringValue(account.Topics.PipelineEvents.Arn)
+	data.SlackChannel = types.StringValue(account.SlackChannel)
 }
 
 func (d DeploymentResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
@@ -102,10 +85,7 @@ func (d DeploymentResource) Create(ctx context.Context, request resource.CreateR
 	}
 
 	created, err := d.client.CreateAccount(
-		enroll_account.Topics{
-			TriggerEvents:  enroll_account.Topic{Arn: data.Topics.TriggerEvents.ValueString()},
-			PipelineEvents: enroll_account.Topic{Arn: data.Topics.PipelineEvents.ValueString()},
-		},
+		data.SlackChannel.ValueString(),
 	)
 	if err != nil {
 		response.Diagnostics.AddError(
