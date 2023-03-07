@@ -11,24 +11,24 @@ import (
 	"github.com/nsbno/terraform-provider-vy/internal/enroll_account"
 )
 
-func NewDeploymentResource() resource.Resource {
-	return &DeploymentResource{}
+func NewDeploymentAccountResource() resource.Resource {
+	return &DeploymentAccountResource{}
 }
 
-type DeploymentResource struct {
+type DeploymentAccountResource struct {
 	client *enroll_account.Client
 }
 
-type DeploymentResourceModel struct {
+type DeploymentAccountResourceModel struct {
 	Id           types.String `tfsdk:"id"`
 	SlackChannel types.String `tfsdk:"slack_channel"`
 }
 
-func (d DeploymentResource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+func (d DeploymentAccountResource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
 	response.TypeName = request.ProviderTypeName + "_deployment_account"
 }
 
-func (d DeploymentResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
+func (d DeploymentAccountResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
 	response.Schema = schema.Schema{
 		MarkdownDescription: "Register the current AWS account into the deployment service",
 		Attributes: map[string]schema.Attribute{
@@ -49,7 +49,7 @@ func (d DeploymentResource) Schema(ctx context.Context, request resource.SchemaR
 	}
 }
 
-func (d *DeploymentResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (d DeploymentAccountResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if request.ProviderData == nil {
 		return
@@ -69,13 +69,13 @@ func (d *DeploymentResource) Configure(ctx context.Context, request resource.Con
 	d.client = configuration.EnrollAccountClient
 }
 
-func deployAccountDomainToState(account *enroll_account.Account, data *DeploymentResourceModel) {
+func deployAccountDomainToState(account *enroll_account.DeploymentAccount, data *DeploymentAccountResourceModel) {
 	data.Id = types.StringValue(account.AccountId)
 	data.SlackChannel = types.StringValue(account.SlackChannel)
 }
 
-func (d DeploymentResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-	var data DeploymentResourceModel
+func (d DeploymentAccountResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
+	var data DeploymentAccountResourceModel
 
 	diags := request.Config.Get(ctx, &data)
 	response.Diagnostics.Append(diags...)
@@ -84,7 +84,7 @@ func (d DeploymentResource) Create(ctx context.Context, request resource.CreateR
 		return
 	}
 
-	created, err := d.client.CreateAccount(
+	created, err := d.client.CreateDeploymentAccount(
 		data.SlackChannel.ValueString(),
 	)
 	if err != nil {
@@ -96,15 +96,15 @@ func (d DeploymentResource) Create(ctx context.Context, request resource.CreateR
 		return
 	}
 
-	var createdData DeploymentResourceModel
+	var createdData DeploymentAccountResourceModel
 	deployAccountDomainToState(created, &createdData)
 
 	diags = response.State.Set(ctx, &createdData)
 	response.Diagnostics.Append(diags...)
 }
 
-func (d DeploymentResource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-	var data DeploymentResourceModel
+func (d DeploymentAccountResource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
+	var data DeploymentAccountResourceModel
 
 	diags := request.State.Get(ctx, &data)
 	response.Diagnostics.Append(diags...)
@@ -113,8 +113,8 @@ func (d DeploymentResource) Read(ctx context.Context, request resource.ReadReque
 		return
 	}
 
-	var readData enroll_account.Account
-	err := d.client.ReadAccount(&readData)
+	var readData enroll_account.DeploymentAccount
+	err := d.client.ReadDeploymentAccount(&readData)
 
 	if err != nil {
 		response.Diagnostics.AddError(
@@ -130,8 +130,8 @@ func (d DeploymentResource) Read(ctx context.Context, request resource.ReadReque
 	response.Diagnostics.Append(diags...)
 }
 
-func (d DeploymentResource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-	var data DeploymentResourceModel
+func (d DeploymentAccountResource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
+	var data DeploymentAccountResourceModel
 
 	diags := request.Plan.Get(ctx, &data)
 	response.Diagnostics.Append(diags...)
@@ -147,8 +147,8 @@ func (d DeploymentResource) Update(ctx context.Context, request resource.UpdateR
 	response.Diagnostics.Append(diags...)
 }
 
-func (d DeploymentResource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
-	var data DeploymentResourceModel
+func (d DeploymentAccountResource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
+	var data DeploymentAccountResourceModel
 
 	diags := request.State.Get(ctx, &data)
 	response.Diagnostics.Append(diags...)
@@ -157,7 +157,7 @@ func (d DeploymentResource) Delete(ctx context.Context, request resource.DeleteR
 		return
 	}
 
-	err := d.client.DeleteAccount()
+	err := d.client.DeleteDeploymentAccount()
 	if err != nil {
 		response.Diagnostics.AddError(
 			"Could not delete account",

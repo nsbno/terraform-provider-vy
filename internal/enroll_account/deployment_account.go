@@ -9,19 +9,19 @@ import (
 	"net/http"
 )
 
-type Account struct {
+type DeploymentAccount struct {
 	AccountId    string `json:"account_id"`
 	SlackChannel string `json:"slack_channel"`
 }
 
-type CreateAccountRequest struct {
+type CreateDeploymentAccountRequest struct {
 	SlackChannel string `json:"slack_channel"`
 }
 
-func (c Client) CreateAccount(slackChannel string) (*Account, error) {
+func (c Client) CreateDeploymentAccount(slackChannel string) (*DeploymentAccount, error) {
 	var data bytes.Buffer
 
-	err := json.NewEncoder(&data).Encode(CreateAccountRequest{SlackChannel: slackChannel})
+	err := json.NewEncoder(&data).Encode(CreateDeploymentAccountRequest{SlackChannel: slackChannel})
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (c Client) CreateAccount(slackChannel string) (*Account, error) {
 		return nil, errors.New(fmt.Sprintf("Could not add account. %s", str))
 	}
 
-	var createdAccount *Account
+	var createdAccount *DeploymentAccount
 	err = json.NewDecoder(response.Body).Decode(&createdAccount)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (c Client) CreateAccount(slackChannel string) (*Account, error) {
 	return createdAccount, nil
 }
 
-func (c Client) ReadAccount(account *Account) error {
+func (c Client) ReadDeploymentAccount(account *DeploymentAccount) error {
 	request, err := http.NewRequest(
 		http.MethodGet,
 		fmt.Sprintf("https://%s/accounts", c.BaseUrl),
@@ -88,7 +88,7 @@ func (c Client) ReadAccount(account *Account) error {
 	return nil
 }
 
-func (c Client) DeleteAccount() error {
+func (c Client) DeleteDeploymentAccount() error {
 	request, err := http.NewRequest(
 		http.MethodDelete,
 		fmt.Sprintf("https://%s/accounts", c.BaseUrl),

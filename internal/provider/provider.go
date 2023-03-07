@@ -136,7 +136,7 @@ func (p VyProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewResourceServerResource,
 		NewAppClientResource,
-		NewDeploymentResource,
+		NewDeploymentAccountResource,
 		NewEnvironmentAccountResource,
 	}
 }
