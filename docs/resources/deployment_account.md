@@ -38,18 +38,10 @@ resource "vy_deployment_account" "this" {
 
 ### Required
 
-- **topics** (Attributes) All the topics that are required for (see [below for nested schema](#nestedatt--topics))
+- **slack_channel** (String) A Slack channel where info about deployments go
 
 ### Read-Only
 
 - **id** (String) The ID of this resource.
-
-<a id="nestedatt--topics"></a>
-### Nested Schema for `topics`
-
-Required:
-
-- **pipeline_events** (String) SNS topic ARN for all events from the pipeline
-- **trigger_events** (String) SNS topic ARN for all pipeline start triggers
 
 
