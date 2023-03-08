@@ -28,7 +28,7 @@ func (c Client) RegisterEnvironmentAccount(ownerAccountId string) (*EnvironmentA
 
 	request, err := http.NewRequest(
 		http.MethodPost,
-		fmt.Sprintf("https://%s/environment-accounts", c.BaseUrl),
+		fmt.Sprintf("https://%s/environment_accounts", c.BaseUrl),
 		&data,
 	)
 	if err != nil {
@@ -60,7 +60,7 @@ func (c Client) RegisterEnvironmentAccount(ownerAccountId string) (*EnvironmentA
 func (c Client) ReadEnvironmentAccount(account *EnvironmentAccount) error {
 	request, err := http.NewRequest(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/environment-accounts", c.BaseUrl),
+		fmt.Sprintf("https://%s/environment_accounts", c.BaseUrl),
 		nil,
 	)
 	if err != nil {
@@ -91,7 +91,7 @@ func (c Client) ReadEnvironmentAccount(account *EnvironmentAccount) error {
 func (c Client) DeleteEnvironmentAccount() error {
 	request, err := http.NewRequest(
 		http.MethodDelete,
-		fmt.Sprintf("https://%s/environment-accounts", c.BaseUrl),
+		fmt.Sprintf("https://%s/environment_accounts", c.BaseUrl),
 		nil,
 	)
 	if err != nil {

@@ -49,7 +49,7 @@ func (d DeploymentAccountResource) Schema(ctx context.Context, request resource.
 	}
 }
 
-func (d DeploymentAccountResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (d *DeploymentAccountResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if request.ProviderData == nil {
 		return

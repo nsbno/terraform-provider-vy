@@ -7,7 +7,7 @@ import (
 
 const testAccEnvironmentAccount = testAcc_ProviderConfig + `
 resource "vy_environment_account" "test" {
-	owner_account_id = "12345678901"
+	owner_account_id = "123456789012"
 }
 `
 

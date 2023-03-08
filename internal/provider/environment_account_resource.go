@@ -49,7 +49,7 @@ func (e EnvironmentAccountResource) Schema(ctx context.Context, request resource
 	}
 }
 
-func (e EnvironmentAccountResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (e *EnvironmentAccountResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	if request.ProviderData == nil {
 		return
 	}
@@ -89,6 +89,7 @@ func (e EnvironmentAccountResource) Create(ctx context.Context, request resource
 			"Could not enroll environment account",
 			fmt.Sprintf("%s", err.Error()),
 		)
+		return
 	}
 
 	var registeredData EnvironmentAccountResourceModel
