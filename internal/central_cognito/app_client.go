@@ -185,7 +185,6 @@ func (c Client) ImportAppClient(client_id string, server *AppClient) error {
 		str, _ := io.ReadAll(response.Body)
 
 		return errors.New(fmt.Sprintf("could not import resource. %s", str))
-
 	}
 
 	err = json.NewDecoder(response.Body).Decode(server)

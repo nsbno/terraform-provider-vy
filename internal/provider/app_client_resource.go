@@ -266,8 +266,8 @@ func (r AppClientResource) Read(ctx context.Context, req resource.ReadRequest, r
 	if err != nil {
 		diags = diag.Diagnostics{}
 		diags.AddError(
-			"Unable to read resource server",
-			fmt.Sprintf("Can't read resource server %s from remote: %s ", data.Name.ValueString(), err.Error()),
+			"Unable to read app client",
+			fmt.Sprintf("Can't read app client %s from remote: %s ", data.Name.ValueString(), err.Error()),
 		)
 		resp.Diagnostics.Append(diags...)
 		return
