@@ -25,6 +25,7 @@ type CognitoInfoDataSourceModel struct {
 	AuthUrl   types.String `tfsdk:"auth_url"`
 	JwksUrl   types.String `tfsdk:"jwks_url"`
 	OpenIdUrl types.String `tfsdk:"open_id_url"`
+	Issuer    types.String `tfsdk:"issuer"`
 }
 
 func (c *CognitoInfoDataSource) Metadata(ctx context.Context, request datasource.MetadataRequest, response *datasource.MetadataResponse) {
@@ -49,6 +50,10 @@ func (c *CognitoInfoDataSource) Schema(ctx context.Context, request datasource.S
 				Computed:            true,
 				MarkdownDescription: "The URL for the /.well-known/openid-configuration",
 			},
+			"issuer": schema.StringAttribute{
+			    Computed:            true,
+			    MarkdownDescription: "The URI for the issuer"
+			}
 		},
 	}
 }
@@ -90,6 +95,9 @@ func (c *CognitoInfoDataSource) Read(ctx context.Context, request datasource.Rea
 			OpenIdUrl: types.StringValue(
 				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE/.well-known/openid-configuration",
 			),
+			Issuer: types.StringValue(
+			    "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE",
+			),
 		}
 	} else if c.environment == "stage" {
 		state = CognitoInfoDataSourceModel{
@@ -101,6 +109,9 @@ func (c *CognitoInfoDataSource) Read(ctx context.Context, request datasource.Rea
 			),
 			OpenIdUrl: types.StringValue(
 				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW/.well-known/openid-configuration",
+			),
+			Issuer: types.StringValue(
+			    "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW",
 			),
 		}
 	} else if c.environment == "test" {
@@ -114,6 +125,9 @@ func (c *CognitoInfoDataSource) Read(ctx context.Context, request datasource.Rea
 			OpenIdUrl: types.StringValue(
 				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT/.well-known/openid-configuration",
 			),
+			Issuer: types.StringValue(
+			    "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT",
+			),
 		}
 	} else if c.environment == "dev" {
 		state = CognitoInfoDataSourceModel{
@@ -125,6 +139,9 @@ func (c *CognitoInfoDataSource) Read(ctx context.Context, request datasource.Rea
 			),
 			OpenIdUrl: types.StringValue(
 				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk/.well-known/openid-configuration",
+			),
+			Issuer: types.StringValue(
+			    "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk",
 			),
 		}
 	}
