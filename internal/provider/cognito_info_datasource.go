@@ -52,8 +52,8 @@ func (c *CognitoInfoDataSource) Schema(ctx context.Context, request datasource.S
 			},
 			"issuer": schema.StringAttribute{
 			    Computed:            true,
-			    MarkdownDescription: "The URI for the issuer"
-			}
+			    MarkdownDescription: "The URI for the issuer",
+			},
 		},
 	}
 }
