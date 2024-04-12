@@ -24,6 +24,7 @@ func TestAccCognitoInfo(t *testing.T) {
 					resource.TestCheckResourceAttrSet(expected_resource_name, "auth_url"),
 					resource.TestCheckResourceAttrSet(expected_resource_name, "jwks_url"),
 					resource.TestCheckResourceAttrSet(expected_resource_name, "open_id_url"),
+					resource.TestCheckResourceAttrSet(expected_resource_name, "issuer"),
 				),
 			},
 		},
