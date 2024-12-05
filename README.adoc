@@ -5,7 +5,7 @@
 
 A provider for custom integrations and services at Vy!
 
-We use this to interact with our central Cognito User pool and handling deployment versions for your compute resources (Lambda, ECS).
+We use this to interact with our central Cognito User pool and handling deployment versions for artifacts uploaded to S3 or ECR.
 You can find more info and documentation about the provider in link:https://registry.terraform.io/providers/nsbno/vy/latest/docs[the terraform registry]!
 
 toc::[]
@@ -55,14 +55,16 @@ resource "vy_resource_server" "this" {
     ]
 }
 ----
-
-=== App Client
-
+=== App Clients
 App clients are the user pool authentication resources attached to your app.
 Use an app client to configure the permitted authentication actions for an app.
 
-==== Backend
+There are two types of app clients: backend and frontend.
+After creating an app client, you can get the client id and client secret (if generated) by using the following outputs:
+`vy_app_client.client.client_id` and `vy_app_client.client.client_secret`.
+You can store these safely using SSM Parameter Store or Secrets Manager.
 
+==== Backend App Client
 When setting the type to `backend` for machine to machine (M2M) authentication, you set up OAuth 2.0 grant type: `client credentials`.
 
 [NOTE]
@@ -79,7 +81,7 @@ resource "vy_app_client" "backend_application" {
 }
 ----
 
-==== Frontend
+==== Frontend App Client
 
 If you want to user authenticate with the shared Cognito user pool, you may define an app client of type `frontend`.
 This will set up a OAuth 2.0 grant type of: `authorization code grant` or `implicit grant`.
@@ -104,8 +106,6 @@ resource "vy_app_client" "client" {
   name = "${data.aws_caller_identity.current.account_id}-${local.application_name}"
   type = "frontend"
 
-  generate_secret = true
-
   callback_urls   = [
     "http://localhost:3000/auth/callback",
     "https://${local.domain_name}/auth/callback",  # Example
@@ -122,10 +122,6 @@ resource "vy_app_client" "client" {
   ]
 }
 ----
-
-After creating the app client, you can get the client id and client secret by using the following outputs:
-`vy_app_client.client.client_id` and `vy_app_client.client.client_secret`.
-You can store these safely using SSM Parameter Store or Secrets Manager.
 
 == Data Sources
 
