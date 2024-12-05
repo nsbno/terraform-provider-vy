@@ -5,11 +5,14 @@
 
 A provider for custom integrations and services at Vy!
 
+We use this to interact with our central Cognito User pool and handling deployment versions for your compute resources (Lambda, ECS).
+You can find more info and documentation about the provider in link:https://registry.terraform.io/providers/nsbno/vy/latest/docs[the terraform registry]!
+
 toc::[]
 
-== Usage
+== Provider setup
 
-Use your normal terraform workflow to add it to your configuration!
+Start by adding this provider to your configuration:
 
 [source]
 ----
@@ -23,8 +26,157 @@ terraform {
 }
 
 provider "vy" {
-    environment = "prod"
+    environment = "prod"  # current environment
 }
 ----
 
-You can find more info and documentation about the provider in link:https://registry.terraform.io/providers/nsbno/vy/latest/docs[the terraform registry]!
+== Cognito Usage
+
+To interact with the centralized Cognito User Pool, we have two kind of resources available: `vy_resource_server` and `vy_app_client`.
+
+=== Resource Server
+
+A resource server is an integration between a user pool and an API.
+Each resource server has custom scopes that you must activate in your app client.
+When you configure a resource server, your app can generate access tokens with OAuth scopes that authorize read and write operations to an API server.
+
+Here is an example of defining custom scopes for a resource server:
+
+----
+resource "vy_resource_server" "this" {
+    name       = "infrademo-demo"
+    identifier = "https://infrademo.vydev.io/demo"
+
+    scopes = [
+        {
+            name        = "read"
+            description = "Allow clients to read data"
+        }
+    ]
+}
+----
+
+=== App Client
+
+App clients are the user pool authentication resources attached to your app.
+Use an app client to configure the permitted authentication actions for an app.
+
+==== Backend
+
+When setting the type to `backend` for machine to machine (M2M) authentication, you set up OAuth 2.0 grant type: `client credentials`.
+
+[NOTE]
+Client Credentials specifies that the client should get the access token from the token endpoint using a combination of client and client_secret.
+
+----
+resource "vy_app_client" "backend_application" {
+    name = "infrademo-backend"
+    type = "backend"
+
+    scopes = [
+        "https://infrademo.vydev.io/demo/read"  # Refers to the resource server defined above
+    ]
+}
+----
+
+==== Frontend
+
+If you want to user authenticate with the shared Cognito user pool, you may define an app client of type `frontend`.
+This will set up a OAuth 2.0 grant type of: `authorization code grant` or `implicit grant`.
+
+[NOTE]
+Authorization Code Grant: provides an authorization code as the response.
+This is more secure than the implicit grant.
+
+[NOTE]
+Implicit Grant: specifies that the client should get the access token (and, optionally, ID token, based on scopes) directly.
+Usually used for Single-Page Applications (SPA) or mobile apps.
+
+To whitelist urls for OAuth2 Authorization Code Flow, you can use `callback_urls` and `logout_urls` parameters.
+
+For scopes, we use Open ID Connect (OIDC) Scopes.
+link:https://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims[Reference page for available scopes can be found here.]
+
+----
+data "aws_caller_identity" "current" {}
+
+resource "vy_app_client" "client" {
+  name = "${data.aws_caller_identity.current.account_id}-${local.application_name}"
+  type = "frontend"
+
+  generate_secret = true
+
+  callback_urls   = [
+    "http://localhost:3000/auth/callback",
+    "https://${local.domain_name}/auth/callback",  # Example
+  ]
+  logout_urls = [
+    "http://localhost:3000/logout",
+    "https://${local.domain_name}/logout",  # Example
+  ]
+
+  scopes = [
+    "email",
+    "openid",
+    "profile",
+  ]
+}
+----
+
+After creating the app client, you can get the client id and client secret by using the following outputs:
+`vy_app_client.client.client_id` and `vy_app_client.client.client_secret`.
+You can store these safely using SSM Parameter Store or Secrets Manager.
+
+== Data Sources
+
+=== vy_artifact_version
+This data source is used to get the latest version of a given artifact from the build stage.
+We use this to get the latest version of a Lambda artifact in S3 or a container image from ECR.
+
+Read more about the relation between the build stage
+and the deployment stage in this link:https://vygruppen.atlassian.net/wiki/x/qADUlwE[Confluence page].
+
+==== ECS Example
+----
+data "vy_artifact_version" "server" {
+  application = "infrademo-backend"  # should match the artifact name in .deployment/config.yaml
+}
+
+# We can now use the version in the ECS service definition
+module "task" {
+  source                = "github.com/nsbno/terraform-aws-ecs-service?ref=x.y.z"
+  [...]
+
+  application_container = {
+    name     = "${var.application_name}-main"
+    image    = "${data.vy_artifact_version.server.store}/${data.vy_artifact_version.server.path}@${data.vy_artifact_version.server.version}"
+
+    [...]
+  }
+}
+----
+==== Lambda Example
+----
+data "vy_artifact_version" "lambda" {
+  application = "infrademo-lambda"  # should match the artifact name in .deployment/config.yaml
+}
+
+module "lambda" {
+  source = "github.com/nsbno/terraform-aws-lambda?ref=x.y.z"
+
+  name      = local.application_name
+
+  artifact_type = "s3"
+  artifact      = data.vy_artifact_version.lambda
+
+  [...]
+----
+
+
+=== vy_cognito_info
+This data source is used to get the information about the Cognito User Pool.
+The outputs can be found link:https://registry.terraform.io/providers/nsbno/vy/latest/docs/data-sources/cognito_info[here].
+:
+----
+data "vy_cognito_info" "this" {}
+----
