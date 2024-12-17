@@ -1,3 +1,6 @@
+//go:build extra_test
+// +build extra_test
+
 package provider
 
 import (
