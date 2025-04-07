@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -76,9 +75,6 @@ func (r ResourceServerResource) Schema(ctx context.Context, request resource.Sch
 							Required:            true,
 						},
 					},
-				},
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.RequiresReplace(),
 				},
 			},
 		},
