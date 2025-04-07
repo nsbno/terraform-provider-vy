@@ -3,7 +3,7 @@ module github.com/nsbno/terraform-provider-vy
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.24
+	github.com/aws/aws-sdk-go v1.55.6
 	github.com/hashicorp/terraform-plugin-docs v0.6.0
 	github.com/hashicorp/terraform-plugin-framework v1.1.1
 	github.com/hashicorp/terraform-plugin-go v0.14.3
