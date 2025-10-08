@@ -121,7 +121,11 @@ func (c Client) UpdateAppClient(updateRequest AppClientUpdateRequest) error {
 		return err
 	}
 	if response.StatusCode != 200 {
-		return errors.New("could not update resource")
+		defer response.Body.Close()
+
+		str, _ := io.ReadAll(response.Body)
+
+		return errors.New(fmt.Sprintf("could not update resource. %s", str))
 	}
 
 	return nil
