@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -12,6 +13,7 @@ import (
 	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 	"github.com/nsbno/terraform-provider-vy/internal/enroll_account"
 	"github.com/nsbno/terraform-provider-vy/internal/version_handler"
+	"github.com/nsbno/terraform-provider-vy/internal/version_handler_v2"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -30,16 +32,18 @@ type VyProvider struct {
 }
 
 type VyProviderConfiguration struct {
-	Environment          string
-	CognitoClient        *central_cognito.Client
-	EnrollAccountClient  *enroll_account.Client
-	VersionHandlerClient *version_handler.Client
+	Environment            string
+	CognitoClient          *central_cognito.Client
+	EnrollAccountClient    *enroll_account.Client
+	VersionHandlerClient   *version_handler.Client
+	VersionHandlerClientV2 *version_handler_v2.Client
 }
 
 // VyProviderModel can be used to store data from the Terraform configuration.
 type VyProviderModel struct {
 	CentralCognitoBaseUrl        types.String `tfsdk:"central_cognito_base_url"`
 	EnrollAccountBaseUrl         types.String `tfsdk:"enroll_account_base_url"`
+	VersionHandlerV2BaseUrl      types.String `tfsdk:"version_handler_v2_base_url"` // For testing only
 	Environment                  types.String `tfsdk:"environment"`
 	DeploymentServiceEnvironment types.String `tfsdk:"deployment_service_environment"`
 }
@@ -59,6 +63,10 @@ func (p VyProvider) Schema(ctx context.Context, request provider.SchemaRequest, 
 			},
 			"enroll_account_base_url": schema.StringAttribute{
 				MarkdownDescription: "The base url for the deployment enrollment service",
+				Optional:            true,
+			},
+			"version_handler_v2_base_url": schema.StringAttribute{
+				MarkdownDescription: "The base url for the version handler v2 service (for testing only)",
 				Optional:            true,
 			},
 			"environment": schema.StringAttribute{
@@ -122,11 +130,27 @@ func (p VyProvider) Configure(ctx context.Context, request provider.ConfigureReq
 		BaseUrl: createUrlFromEnvironment(enroll_account_domain, "version-handler", deployment_service_environment),
 	}
 
+	// Configure version handler v2 client with optional test URL
+	var versionClientV2 *version_handler_v2.Client
+	if !data.VersionHandlerV2BaseUrl.IsNull() {
+		// Test
+		versionClientV2 = &version_handler_v2.Client{
+			BaseUrl:    data.VersionHandlerV2BaseUrl.ValueString(),
+			HTTPClient: &http.Client{},
+		}
+	} else {
+		// Production: use default URL with AWS signing
+		versionClientV2 = &version_handler_v2.Client{
+			BaseUrl: createUrlFromEnvironment(enroll_account_domain, "version-handler", deployment_service_environment),
+		}
+	}
+
 	config := &VyProviderConfiguration{
-		Environment:          data.Environment.ValueString(),
-		CognitoClient:        cognito_client,
-		EnrollAccountClient:  enroll_client,
-		VersionHandlerClient: version_client,
+		Environment:            data.Environment.ValueString(),
+		CognitoClient:          cognito_client,
+		EnrollAccountClient:    enroll_client,
+		VersionHandlerClient:   version_client,
+		VersionHandlerClientV2: versionClientV2,
 	}
 
 	p.config = config
@@ -147,6 +171,7 @@ func (p VyProvider) DataSources(ctx context.Context) []func() datasource.DataSou
 	return []func() datasource.DataSource{
 		NewCognitoInfoDataSource,
 		NewArtifactVersionDataSource,
+		NewECRImageDataSource,
 	}
 }
 
