@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/nsbno/terraform-provider-vy/internal/aws_auth"
 )
 
 type AppClient struct {
@@ -38,7 +40,7 @@ func (c Client) ReadAppClient(name string, server *AppClient) error {
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -77,7 +79,7 @@ func (c Client) CreateAppClient(server AppClient) (*AppClient, error) {
 		return nil, err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +118,7 @@ func (c Client) UpdateAppClient(updateRequest AppClientUpdateRequest) error {
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -141,7 +143,7 @@ func (c Client) DeleteAppClient(name string) error {
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -178,7 +180,7 @@ func (c Client) ImportAppClient(client_id string, server *AppClient) error {
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}

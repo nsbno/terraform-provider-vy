@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/nsbno/terraform-provider-vy/internal/aws_auth"
 )
 
 type DeploymentAccount struct {
@@ -35,7 +37,7 @@ func (c Client) CreateDeploymentAccount(slackChannel string) (*DeploymentAccount
 		return nil, err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +69,7 @@ func (c Client) ReadDeploymentAccount(account *DeploymentAccount) error {
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -98,7 +100,7 @@ func (c Client) DeleteDeploymentAccount() error {
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}

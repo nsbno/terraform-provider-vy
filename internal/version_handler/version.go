@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/nsbno/terraform-provider-vy/internal/aws_auth"
 )
 
 type Version struct {
@@ -26,7 +28,7 @@ func (c Client) ReadVersion(application_name string, version *Version) error {
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}

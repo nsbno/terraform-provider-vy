@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/nsbno/terraform-provider-vy/internal/aws_auth"
 )
 
 type Scope struct {
@@ -37,7 +39,7 @@ func (c Client) ReadResourceServer(identifier string, server *ResourceServer) er
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -76,7 +78,7 @@ func (c Client) CreateResourceServer(server ResourceServer) error {
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -109,7 +111,7 @@ func (c Client) UpdateResourceServer(updateRequest ResourceServerUpdateRequest) 
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -134,7 +136,7 @@ func (c Client) DeleteResourceServer(identifier string) error {
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -171,7 +173,7 @@ func (c Client) ImportResourceServer(identifier string, server *ResourceServer) 
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}

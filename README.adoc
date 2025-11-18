@@ -180,7 +180,7 @@ data "vy_cognito_info" "this" {}
 
 == Local Development
 
-First, assume role to an AWS Account, e.g. `infrademo-test`.
+First, assume a role to an AWS Account, which are _not_ part of `infrademo`.
 
 To test changes locally, you can run the following command:
 
@@ -188,3 +188,5 @@ To test changes locally, you can run the following command:
 ----
 TF_ACC=1 go test ./... -v $
 ----
+
+The GitHub AWS Account variables are set to `infrademo-test` variables.

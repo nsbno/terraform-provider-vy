@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/nsbno/terraform-provider-vy/internal/aws_auth"
 )
 
 type EnvironmentAccount struct {
@@ -35,7 +37,7 @@ func (c Client) RegisterEnvironmentAccount(ownerAccountId string) (*EnvironmentA
 		return nil, err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +69,7 @@ func (c Client) ReadEnvironmentAccount(account *EnvironmentAccount) error {
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}
@@ -98,7 +100,7 @@ func (c Client) DeleteEnvironmentAccount() error {
 		return err
 	}
 
-	response, err := signedRequest(request)
+	response, err := aws_auth.SignedRequest(request)
 	if err != nil {
 		return err
 	}
