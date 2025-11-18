@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -32,31 +33,35 @@ func (a ArtifactVersionDataSource) Metadata(ctx context.Context, request datasou
 
 func (a ArtifactVersionDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
 	response.Schema = schema.Schema{
-		MarkdownDescription: "A version for an artifact",
+		MarkdownDescription: "Get information about a specific artifact version. " +
+			"Artifacts are uploaded to S3 or ECR during the CI process.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
 			},
 			"application": schema.StringAttribute{
-				MarkdownDescription: "The application you want to find an artifact for",
-				Required:            true,
+				MarkdownDescription: "The application you want to find an artifact for. " +
+					"For S3 artifacts, this is the name of the application defined in `.deployment/config.yaml`. " +
+					"For ECR artifacts, this is the name of the ECR repository.",
+				Required: true,
 			},
 			"uri": schema.StringAttribute{
 				MarkdownDescription: "The URI of the given resource",
 				Computed:            true,
 			},
 			"store": schema.StringAttribute{
-				MarkdownDescription: "The base location of where the artifact is stored",
+				MarkdownDescription: "The base location of where the artifact is stored. S3 or ECR.",
 				Computed:            true,
 			},
 			"path": schema.StringAttribute{
-				MarkdownDescription: "The path in the store where your application is stored",
+				MarkdownDescription: "The path in the store where your application is stored. For S3 this is the key. For ECR this is the image tag.",
 				Computed:            true,
 			},
 			"version": schema.StringAttribute{
-				MarkdownDescription: "The version of the artifact",
-				Computed:            true,
+				MarkdownDescription: "The version of the artifact. For S3 this is the object version ID. " +
+					"For ECR this is the image digest.",
+				Computed: true,
 			},
 		},
 	}

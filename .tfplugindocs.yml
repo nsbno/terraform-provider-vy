@@ -1,0 +1,24 @@
+# Configuration for terraform-plugin-docs generation
+# See: https://github.com/hashicorp/terraform-plugin-docs
+
+provider:
+  name: vy
+
+rendering:
+  # Include front matter in generated docs
+  include_front_matter: true
+
+  # Use custom templates if they exist
+  use_templates: true
+
+resources:
+  # Generate docs for resources
+  generate: true
+
+data-sources:
+  # Generate docs for data sources
+  generate: true
+
+examples:
+  # Include example usage from examples/ directory
+  generate: true

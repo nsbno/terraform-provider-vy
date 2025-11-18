@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -39,7 +40,10 @@ func (r ResourceServerResource) Metadata(ctx context.Context, request resource.M
 
 func (r ResourceServerResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
 	response.Schema = schema.Schema{
-		MarkdownDescription: "A cognito resource server",
+		MarkdownDescription: "A resource server is an integration between a user pool and an API. " +
+			"Each resource server has custom scopes that you must activate in your app client. " +
+			"When you configure a resource server, your app can generate access tokens with OAuth scopes that " +
+			"authorize read and write operations to your API server.",
 
 		Attributes: map[string]schema.Attribute{
 			// id is required by the SDKv2 testing framework.

@@ -1,0 +1,31 @@
+---
+page_title: "{{.ProviderShortName}} Provider"
+subcategory: ""
+description: |-
+{{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
+---
+
+# {{.ProviderShortName}} Provider
+
+{{ .Description | trimspace }}
+
+This provider enables interaction with three core parts of Vy's infrastructure:
+
+- **Shared Cognito (Vy Utvikling)** - Manage OAuth 2.0 resource servers and app clients for authentication
+- **Version Handler Service** - Retrieve artifact versions during Terraform deployments from S3 and ECR
+- **Enroll Account Service** - Register AWS accounts in Vy's AWS Organization
+
+## Example Usage
+
+{{ tffile "examples/provider/provider.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Environment Configuration
+
+The `environment` parameter determines which Vy environment to interact with:
+
+- `dev` - Development environment
+- `test` - Testing environment
+- `staging` - Staging environment
+- `prod` - Production environment

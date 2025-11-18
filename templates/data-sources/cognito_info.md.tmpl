@@ -1,0 +1,16 @@
+---
+page_title: "{{.Type}} {{.Name}} - {{.ProviderShortName}}"
+subcategory: "Shared Cognito"
+description: |-
+{{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
+---
+
+# {{.Type}} (Data Source)
+
+{{ .Description | trimspace }}
+
+## Example Usage
+
+{{ tffile (printf "examples/data-sources/%s/data-source.tf" .Name)}}
+
+{{ .SchemaMarkdown | trimspace }}

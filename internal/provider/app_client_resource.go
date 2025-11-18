@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -71,7 +72,8 @@ func (r *AppClientResource) Metadata(ctx context.Context, request resource.Metad
 
 func (r *AppClientResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
 	response.Schema = schema.Schema{
-		MarkdownDescription: "An app client, used to access resource servers.",
+		MarkdownDescription: "App clients are the user pool authentication resources attached to your app. " +
+			"Use an app client to configure the permitted authentication actions towards a resource server.",
 
 		Attributes: map[string]schema.Attribute{
 			// id is required by the SDKv2 testing framework.
@@ -93,8 +95,9 @@ func (r *AppClientResource) Schema(ctx context.Context, request resource.SchemaR
 				ElementType:         types.StringType,
 			},
 			"type": schema.StringAttribute{
-				MarkdownDescription: "The use-case for this app client. Used to automatically add OAuth options",
-				Required:            true,
+				MarkdownDescription: "The use-case for this app client. Used to automatically add OAuth options. " +
+					"Must be either `frontend` or `backend`.",
+				Required: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

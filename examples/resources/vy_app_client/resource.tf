@@ -18,5 +18,5 @@ resource "vy_app_client" "frontend_application" {
   ]
 
   callback_urls = ["https://example.com/callback"]
-  logout_urls = ["https://example.com/logout"]
+  logout_urls   = ["https://example.com/logout"]
 }

@@ -1,9 +1,9 @@
 resource "vy_resource_server" "this" {
   identifier = "service.vydev.io"
-  name = "my service"
+  name       = "my service"
   scopes = [
     {
-      name = "read"
+      name        = "read"
       description = "used for reading"
     }
   ]
