@@ -54,7 +54,7 @@ func (p VyProvider) Schema(ctx context.Context, request provider.SchemaRequest, 
 		MarkdownDescription: "A provider for Vy's internal services.",
 		Attributes: map[string]schema.Attribute{
 			"central_cognito_base_url": schema.StringAttribute{
-				MarkdownDescription: "The base url for the central-cognito service",
+				MarkdownDescription: "The base url for the central shared cognito service",
 				Optional:            true,
 			},
 			"enroll_account_base_url": schema.StringAttribute{
@@ -62,12 +62,13 @@ func (p VyProvider) Schema(ctx context.Context, request provider.SchemaRequest, 
 				Optional:            true,
 			},
 			"environment": schema.StringAttribute{
-				MarkdownDescription: "The environment to provision in",
+				MarkdownDescription: "The environment to interact with.",
 				Required:            true,
 			},
 			"deployment_service_environment": schema.StringAttribute{
-				MarkdownDescription: "The environment of the deployment service (this should be left blank unless you're testing the deployment service)",
-				Optional:            true,
+				MarkdownDescription: "The environment of the deployment service. " +
+					"This should be left blank unless you're testing the deployment service.",
+				Optional: true,
 			},
 		},
 	}
