@@ -51,7 +51,7 @@ func (p VyProvider) Metadata(ctx context.Context, request provider.MetadataReque
 
 func (p VyProvider) Schema(ctx context.Context, request provider.SchemaRequest, response *provider.SchemaResponse) {
 	response.Schema = schema.Schema{
-		MarkdownDescription: "A VyProvider for interracting with Vy's internal services.",
+		MarkdownDescription: "A provider for Vy's internal services.",
 		Attributes: map[string]schema.Attribute{
 			"central_cognito_base_url": schema.StringAttribute{
 				MarkdownDescription: "The base url for the central-cognito service",

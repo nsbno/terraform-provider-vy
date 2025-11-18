@@ -5,7 +5,7 @@ description: |-
   App clients are the user pool authentication resources attached to your app. Use an app client to configure the permitted authentication actions towards a resource server.
 ---
 
-# Resource (Resource)
+# Resource: vy_app_client
 
 App clients are the user pool authentication resources attached to your app. Use an app client to configure the permitted authentication actions towards a resource server.
 

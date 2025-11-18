@@ -5,7 +5,7 @@ description: |-
   A resource server is an integration between a user pool and an API. Each resource server has custom scopes that you must activate in your app client. When you configure a resource server, your app can generate access tokens with OAuth scopes that authorize read and write operations to your API server.
 ---
 
-# Resource (Resource)
+# Resource: vy_resource_server
 
 A resource server is an integration between a user pool and an API. Each resource server has custom scopes that you must activate in your app client. When you configure a resource server, your app can generate access tokens with OAuth scopes that authorize read and write operations to your API server.
 

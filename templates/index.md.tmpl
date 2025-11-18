@@ -5,15 +5,15 @@ description: |-
 {{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
 ---
 
-# {{.ProviderShortName}} Provider
+# Vy Provider
 
 {{ .Description | trimspace }}
 
 This provider enables interaction with three core parts of Vy's infrastructure:
 
+- **Enroll Account Service** - Register AWS accounts in Vy's AWS Organization
 - **Shared Cognito (Vy Utvikling)** - Manage OAuth 2.0 resource servers and app clients for authentication
 - **Version Handler Service** - Retrieve artifact versions during Terraform deployments from S3 and ECR
-- **Enroll Account Service** - Register AWS accounts in Vy's AWS Organization
 
 ## Example Usage
 

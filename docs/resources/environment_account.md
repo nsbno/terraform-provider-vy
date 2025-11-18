@@ -5,7 +5,7 @@ description: |-
   Register the current AWS account as an environment for the deployment service
 ---
 
-# Resource (Resource)
+# Resource: vy_environment_account
 
 Register the current AWS account as an environment for the deployment service
 

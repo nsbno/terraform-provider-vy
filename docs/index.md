@@ -2,22 +2,29 @@
 page_title: "vy Provider"
 subcategory: ""
 description: |-
-  A VyProvider for interracting with Vy's internal services.
+  A provider for Vy's internal services.
 ---
 
-# vy Provider
+# Vy Provider
 
-A VyProvider for interracting with Vy's internal services.
+A provider for Vy's internal services.
 
 This provider enables interaction with three core parts of Vy's infrastructure:
 
+- **Enroll Account Service** - Register AWS accounts in Vy's AWS Organization
 - **Shared Cognito (Vy Utvikling)** - Manage OAuth 2.0 resource servers and app clients for authentication
 - **Version Handler Service** - Retrieve artifact versions during Terraform deployments from S3 and ECR
-- **Enroll Account Service** - Register AWS accounts in Vy's AWS Organization
 
 ## Example Usage
 
 ```terraform
+required_providers {
+  vy = {
+	source  = "nsbno/vy"
+	version = ">= 0.5.0, < 1.0.0"
+  }
+}
+
 provider "vy" {
   environment = "prod"
 }

@@ -5,7 +5,7 @@ description: |-
   Get information about a specific artifact version. Artifacts are uploaded to S3 or ECR during the CI process.
 ---
 
-# Data Source (Data Source)
+# Data Source: vy_artifact_version
 
 Get information about a specific artifact version. Artifacts are uploaded to S3 or ECR during the CI process.
 

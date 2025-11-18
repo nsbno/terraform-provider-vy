@@ -5,7 +5,7 @@ description: |-
   Register the current AWS account into the deployment service
 ---
 
-# Resource (Resource)
+# Resource: vy_deployment_account
 
 Register the current AWS account into the deployment service
 
