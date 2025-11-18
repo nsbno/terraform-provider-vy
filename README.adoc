@@ -176,3 +176,15 @@ The outputs can be found link:https://registry.terraform.io/providers/nsbno/vy/l
 ----
 data "vy_cognito_info" "this" {}
 ----
+
+
+== Local Development
+
+First, assume role to an AWS Account, e.g. `infrademo-test`.
+
+To test changes locally, you can run the following command:
+
+[source]
+----
+TF_ACC=1 go test ./... -v $
+----
