@@ -11,7 +11,8 @@ import (
 )
 
 type S3Artifact struct {
-	GitHubRepositoryName string
+	GitHubRepositoryName string `json:"github_repository_name"`
+	WorkingDirectory     string `json:"working_directory"`
 	URI                  string `json:"uri"`
 	Store                string `json:"store"`
 	Path                 string `json:"path"`
