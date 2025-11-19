@@ -11,7 +11,7 @@ import (
 )
 
 type ECRVersion struct {
-	ECRRepositoryName string `json:"application_name"`
+	ECRRepositoryName string `json:"ecr_repository_name"`
 	URI               string `json:"uri"`
 	Store             string `json:"store"`
 	Path              string `json:"path"`
@@ -19,7 +19,7 @@ type ECRVersion struct {
 	GitSha            string `json:"git_sha"`
 }
 
-func (c Client) ReadVersion(ecrRepositoryName string, ecrVersion *ECRVersion) error {
+func (c Client) ReadECRImage(ecrRepositoryName string, ecrVersion *ECRVersion) error {
 	url := fmt.Sprintf("https://%s/v2/ecr/versions/%s", c.BaseUrl, ecrRepositoryName)
 
 	// If HTTPClient is set (for testing), construct URL without https:// prefix

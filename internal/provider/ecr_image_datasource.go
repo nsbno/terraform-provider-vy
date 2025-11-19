@@ -99,7 +99,7 @@ func (e ECRImageDataSource) Read(ctx context.Context, request datasource.ReadReq
 	}
 
 	var version version_handler_v2.ECRVersion
-	err := e.client.ReadVersion(state.ECRRepositoryName.ValueString(), &version)
+	err := e.client.ReadECRImage(state.ECRRepositoryName.ValueString(), &version)
 	if err != nil {
 		response.Diagnostics.AddError(
 			"Unable to find the ECR Image",

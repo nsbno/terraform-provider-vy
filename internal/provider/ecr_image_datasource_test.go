@@ -34,12 +34,12 @@ func TestAccECRImage_Basic(t *testing.T) {
 
 		// Return mock ECR version data as JSON
 		mockResponse := map[string]string{
-			"application_name": "my-service",
-			"uri":              "123456789012.dkr.ecr.eu-west-1.amazonaws.com/my-service:latest",
-			"store":            "ecr",
-			"path":             "latest",
-			"version":          "sha256:abc123def456",
-			"git_sha":          "abc123",
+			"ecr_repository_name": "my-service",
+			"uri":                 "123456789012.dkr.ecr.eu-west-1.amazonaws.com/my-service:latest",
+			"store":               "ecr",
+			"path":                "latest",
+			"version":             "sha256:abc123def456",
+			"git_sha":             "abc123",
 		}
 
 		w.Header().Set("Content-Type", "application/json")
