@@ -59,9 +59,9 @@ module "lambda" {
 
 ### Read-Only
 
-- `git_sha` (String) The Git SHA of the commit that was used to build the artifact.
+- `git_sha` (String) The Git SHA of the commit that was used to build the artifact. Used as S3 filename.
 - `id` (String) The ID of this resource.
-- `path` (String) The path in S3 where your artifact is stored.
-- `store` (String) The base location of where the artifact is stored. S3.
+- `path` (String) The S3 key for the artifact.
+- `store` (String) The S3 Bucket name where the artifact is stored.
 - `uri` (String) The URI of the S3 artifact.
 - `version` (String) The version of the S3 artifact, which is the object version ID.

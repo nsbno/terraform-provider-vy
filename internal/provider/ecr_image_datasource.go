@@ -48,15 +48,15 @@ func (e ECRImageDataSource) Schema(ctx context.Context, request datasource.Schem
 				Required:            true,
 			},
 			"uri": schema.StringAttribute{
-				MarkdownDescription: "The Image URI of the ECR Image.",
+				MarkdownDescription: "The full Image URI of the ECR Image. Prefixed with docker://",
 				Computed:            true,
 			},
 			"store": schema.StringAttribute{
-				MarkdownDescription: "The base location of where the artifact is stored. ECR.",
+				MarkdownDescription: "The ECR URI, in this format: `{registry_id}.dkr.ecr.{region}.amazonaws.com`",
 				Computed:            true,
 			},
 			"path": schema.StringAttribute{
-				MarkdownDescription: "The path in ECR where your image is stored, which is the image tag.",
+				MarkdownDescription: "The ECR repository name where the image is stored.",
 				Computed:            true,
 			},
 			"version": schema.StringAttribute{
@@ -64,7 +64,7 @@ func (e ECRImageDataSource) Schema(ctx context.Context, request datasource.Schem
 				Computed:            true,
 			},
 			"git_sha": schema.StringAttribute{
-				MarkdownDescription: "The Git SHA of the commit that was used to build the image.",
+				MarkdownDescription: "The Git SHA of the commit that was used to build the image. Used to tag the image.",
 				Computed:            true,
 			},
 		},

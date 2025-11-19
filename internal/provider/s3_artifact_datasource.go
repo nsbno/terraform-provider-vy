@@ -47,11 +47,11 @@ func (s S3ArtifactDataSource) Schema(ctx context.Context, request datasource.Sch
 				Computed:            true,
 			},
 			"store": schema.StringAttribute{
-				MarkdownDescription: "The base location of where the artifact is stored. S3.",
+				MarkdownDescription: "The S3 Bucket name where the artifact is stored.",
 				Computed:            true,
 			},
 			"path": schema.StringAttribute{
-				MarkdownDescription: "The path in S3 where your artifact is stored.",
+				MarkdownDescription: "The S3 key for the artifact.",
 				Computed:            true,
 			},
 			"version": schema.StringAttribute{
@@ -59,8 +59,9 @@ func (s S3ArtifactDataSource) Schema(ctx context.Context, request datasource.Sch
 				Computed:            true,
 			},
 			"git_sha": schema.StringAttribute{
-				MarkdownDescription: "The Git SHA of the commit that was used to build the artifact.",
-				Computed:            true,
+				MarkdownDescription: "The Git SHA of the commit that was used to build the artifact. " +
+					"Used as S3 filename.",
+				Computed: true,
 			},
 		},
 	}

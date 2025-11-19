@@ -55,9 +55,9 @@ module "lambda" {
 
 ### Read-Only
 
-- `git_sha` (String) The Git SHA of the commit that was used to build the image.
+- `git_sha` (String) The Git SHA of the commit that was used to build the image. Used to tag the image.
 - `id` (String) The ID of this resource.
-- `path` (String) The path in ECR where your image is stored, which is the image tag.
-- `store` (String) The base location of where the artifact is stored. ECR.
-- `uri` (String) The Image URI of the ECR Image.
+- `path` (String) The ECR repository name where the image is stored.
+- `store` (String) The ECR URI, in this format: `{registry_id}.dkr.ecr.{region}.amazonaws.com`
+- `uri` (String) The full Image URI of the ECR Image. Prefixed with docker://
 - `version` (String) The version of the ECR Image, which is the image digest.
