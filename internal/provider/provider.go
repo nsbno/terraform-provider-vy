@@ -99,35 +99,35 @@ func (p VyProvider) Configure(ctx context.Context, request provider.ConfigureReq
 		return
 	}
 
-	cognito_domain := "cognito.vydev.io"
+	cognitoDomain := "cognito.vydev.io"
 	if !data.CentralCognitoBaseUrl.IsNull() {
-		cognito_domain = data.CentralCognitoBaseUrl.ValueString()
+		cognitoDomain = data.CentralCognitoBaseUrl.ValueString()
 	}
 
-	enroll_account_domain := "vydeployment.vydev.io"
+	enrollAccountDomain := "vydeployment.vydev.io"
 	if !data.EnrollAccountBaseUrl.IsNull() {
-		enroll_account_domain = data.EnrollAccountBaseUrl.ValueString()
+		enrollAccountDomain = data.EnrollAccountBaseUrl.ValueString()
 	}
 
-	deployment_service_environment := "prod"
+	deploymentServiceEnvironment := "prod"
 	if !data.DeploymentServiceEnvironment.IsNull() {
 		response.Diagnostics.AddWarning(
 			"Non-prod deployment service environment",
 			"You have selected a non-prod deployment service environment. This should only be done while testing the deployment service.",
 		)
-		deployment_service_environment = data.DeploymentServiceEnvironment.ValueString()
+		deploymentServiceEnvironment = data.DeploymentServiceEnvironment.ValueString()
 	}
 
-	cognito_client := &central_cognito.Client{
-		BaseUrl: createUrlFromEnvironment(cognito_domain, "delegated", data.Environment.ValueString()),
+	cognitoClient := &central_cognito.Client{
+		BaseUrl: createUrlFromEnvironment(cognitoDomain, "delegated", data.Environment.ValueString()),
 	}
 
-	enroll_client := &enroll_account.Client{
-		BaseUrl: createUrlFromEnvironment(enroll_account_domain, "enroll", deployment_service_environment),
+	enrollClient := &enroll_account.Client{
+		BaseUrl: createUrlFromEnvironment(enrollAccountDomain, "enroll", deploymentServiceEnvironment),
 	}
 
-	version_client := &version_handler.Client{
-		BaseUrl: createUrlFromEnvironment(enroll_account_domain, "version-handler", deployment_service_environment),
+	versionClient := &version_handler.Client{
+		BaseUrl: createUrlFromEnvironment(enrollAccountDomain, "version-handler", deploymentServiceEnvironment),
 	}
 
 	// Configure version handler v2 client with optional test URL
@@ -141,15 +141,15 @@ func (p VyProvider) Configure(ctx context.Context, request provider.ConfigureReq
 	} else {
 		// Production: use default URL with AWS signing
 		versionClientV2 = &version_handler_v2.Client{
-			BaseUrl: createUrlFromEnvironment(enroll_account_domain, "version-handler", deployment_service_environment),
+			BaseUrl: createUrlFromEnvironment(enrollAccountDomain, "version-handler", deploymentServiceEnvironment),
 		}
 	}
 
 	config := &VyProviderConfiguration{
 		Environment:            data.Environment.ValueString(),
-		CognitoClient:          cognito_client,
-		EnrollAccountClient:    enroll_client,
-		VersionHandlerClient:   version_client,
+		CognitoClient:          cognitoClient,
+		EnrollAccountClient:    enrollClient,
+		VersionHandlerClient:   versionClient,
 		VersionHandlerClientV2: versionClientV2,
 	}
 
