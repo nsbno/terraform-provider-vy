@@ -1,0 +1,20 @@
+---
+page_title: "{{.Type}} {{.Name}} - {{.ProviderShortName}}"
+subcategory: "Version Handler V2"
+description: |-
+{{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
+---
+
+# {{.Type}}: {{.Name}}
+
+{{ .Description | trimspace }}
+
+## ECS Usage
+
+{{ tffile (printf "examples/data-sources/%s/ecs.tf" .Name)}}
+
+## Lambda Usage
+
+{{ tffile (printf "examples/data-sources/%s/lambda.tf" .Name)}}
+
+{{ .SchemaMarkdown | trimspace }}

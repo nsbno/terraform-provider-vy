@@ -14,21 +14,21 @@ Get information about a specific artifact version. Artifacts are uploaded to S3 
 ```terraform
 # Get the latest version of a Lambda artifact from S3
 data "vy_artifact_version" "lambda" {
-  application = "my-lambda-function"  # Lambda Name
+  application = "my-lambda-function" # Lambda Name
 }
 
 # Use the version in a Lambda module
 module "lambda" {
   source = "github.com/nsbno/terraform-aws-lambda?ref=x.y.z"
 
-  name          = "my-function"
+  service_name  = "my-service"
   artifact_type = "s3"
   artifact      = data.vy_artifact_version.lambda
 }
 
 # Get the latest version of a container image from ECR
 data "vy_artifact_version" "server" {
-  application = "my-backend-service"  # ECR Repository name
+  application = "my-backend-service" # ECR Repository name
 }
 
 # Use the version in an ECS task definition

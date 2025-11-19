@@ -13,7 +13,9 @@ This provider enables interaction with three core parts of Vy's infrastructure:
 
 - **Enroll Account Service** - Register AWS accounts in Vy's AWS Organization
 - **Shared Cognito (Vy Utvikling)** - Manage OAuth 2.0 resource servers and app clients for authentication
-- **Version Handler Service** - Retrieve artifact versions during Terraform deployments from S3 and ECR
+- **Version Handler** - Retrieve artifact versions during Terraform deployments from S3 and ECR
+- **Version Handler V2** - Retrieve artifact versions during Terraform deployments from S3 and ECR for GHA based
+pipeline
 
 ## Example Usage
 
@@ -35,13 +37,14 @@ provider "vy" {
 
 ### Required
 
-- `environment` (String) The environment to provision in
+- `environment` (String) The environment to interact with.
 
 ### Optional
 
-- `central_cognito_base_url` (String) The base url for the central-cognito service
-- `deployment_service_environment` (String) The environment of the deployment service (this should be left blank unless you're testing the deployment service)
+- `central_cognito_base_url` (String) The base url for the central shared cognito service
+- `deployment_service_environment` (String) The environment of the deployment service. This should be left blank unless you're testing the deployment service.
 - `enroll_account_base_url` (String) The base url for the deployment enrollment service
+- `version_handler_v2_base_url` (String) The base url for the version handler v2 service (for testing only)
 
 ## Environment Configuration
 

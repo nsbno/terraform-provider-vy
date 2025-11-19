@@ -1,0 +1,20 @@
+---
+page_title: "{{.Type}} {{.Name}} - {{.ProviderShortName}}"
+subcategory: "Version Handler V2"
+description: |-
+{{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
+---
+
+# {{.Type}}: {{.Name}}
+
+{{ .Description | trimspace }}
+
+## Main Usage
+
+{{ tffile (printf "examples/data-sources/%s/main.tf" .Name)}}
+
+## Mono Repo Usage
+
+{{ tffile (printf "examples/data-sources/%s/monorepo.tf" .Name)}}
+
+{{ .SchemaMarkdown | trimspace }}

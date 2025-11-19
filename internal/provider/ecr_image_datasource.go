@@ -36,7 +36,8 @@ func (e ECRImageDataSource) Metadata(ctx context.Context, request datasource.Met
 func (e ECRImageDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
 	response.Schema = schema.Schema{
 		MarkdownDescription: "Get information about a specific artifact version. " +
-			"Artifacts are uploaded to ECR during the CI process.",
+			"Artifacts are uploaded to ECR during the CI process. " +
+			"Each unique service (Lambda or ECS) should have its own ECR repository.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
