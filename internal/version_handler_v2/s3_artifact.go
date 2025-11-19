@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/nsbno/terraform-provider-vy/internal/aws_auth"
 )
@@ -23,10 +24,13 @@ type S3Artifact struct {
 func (c Client) ReadS3Artifact(githubRepositoryName string, workingDirectory string, s3artifact *S3Artifact) error {
 	var url string
 	if workingDirectory != "" {
-		url = fmt.Sprintf("https://%s/v2/s3/versions/%s/%s", c.BaseUrl, githubRepositoryName, workingDirectory)
+		splitWorkingDirectory := strings.Split(workingDirectory, "/")
+		lastPart := splitWorkingDirectory[len(splitWorkingDirectory)-1]
+
+		url = fmt.Sprintf("https://%s/v2/s3/versions/%s/%s", c.BaseUrl, githubRepositoryName, lastPart)
 		// If HTTPClient is set (for testing), construct URL without https:// prefix
 		if c.HTTPClient != nil {
-			url = fmt.Sprintf("http://%s/v2/s3/versions/%s/%s", c.BaseUrl, githubRepositoryName, workingDirectory)
+			url = fmt.Sprintf("http://%s/v2/s3/versions/%s/%s", c.BaseUrl, githubRepositoryName, lastPart)
 		}
 	} else {
 		url = fmt.Sprintf("https://%s/v2/s3/versions/%s", c.BaseUrl, githubRepositoryName)
