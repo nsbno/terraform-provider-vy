@@ -172,6 +172,7 @@ func (p VyProvider) DataSources(ctx context.Context) []func() datasource.DataSou
 		NewCognitoInfoDataSource,
 		NewArtifactVersionDataSource,
 		NewECRImageDataSource,
+		NewS3ArtifactDataSource,
 	}
 }
 
