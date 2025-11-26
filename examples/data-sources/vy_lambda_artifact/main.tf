@@ -1,5 +1,5 @@
 # Get information about an S3 artifact based on GitHub repository name
-data "vy_s3_artifact" "this" {
+data "vy_lambda_artifact" "this" {
   github_repository_name = "infrademo-demo-app"
 }
 
@@ -9,5 +9,5 @@ module "lambda" {
 
   service_name  = "my-function"
   artifact_type = "s3"
-  artifact      = data.vy_s3_artifact.this
+  artifact      = data.vy_lambda_artifact.this
 }

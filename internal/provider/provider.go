@@ -171,8 +171,8 @@ func (p VyProvider) DataSources(ctx context.Context) []func() datasource.DataSou
 	return []func() datasource.DataSource{
 		NewCognitoInfoDataSource,
 		NewArtifactVersionDataSource,
-		NewECRImageDataSource,
-		NewS3ArtifactDataSource,
+		NewECSImageDataSource,
+		NewLambdaArtifactDataSource,
 	}
 }
 

@@ -1,5 +1,7 @@
 # Get information about an ECR Image based on ECR Repository Name
-data "vy_ecr_image" "this" {
+data "vy_ecs_image" "this" {
+  github_repository_name = "infrademo-demo-app"
+
   ecr_repository_name = "infrademo-demo-app"
 }
 
@@ -8,7 +10,7 @@ module "task" {
   source = "github.com/nsbno/terraform-aws-ecs-service?ref=x.y.z"
 
   application_container = {
-	name  = "backend"
-	image = data.vy_ecr_image.this
+    name  = "backend"
+    image = data.vy_ecs_image.this
   }
 }

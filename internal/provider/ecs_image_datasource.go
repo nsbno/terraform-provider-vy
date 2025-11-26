@@ -10,15 +10,15 @@ import (
 	"github.com/nsbno/terraform-provider-vy/internal/version_handler_v2"
 )
 
-func NewECRImageDataSource() datasource.DataSource {
-	return &ECRImageDataSource{}
+func NewECSImageDataSource() datasource.DataSource {
+	return &ECSImageDataSource{}
 }
 
-type ECRImageDataSource struct {
+type ECSImageDataSource struct {
 	client *version_handler_v2.Client
 }
 
-type ECRImageDataSourceModel struct {
+type ECSImageDataSourceModel struct {
 	Id                types.String `tfsdk:"id"`
 	ECRRepositoryName types.String `tfsdk:"ecr_repository_name"`
 	URI               types.String `tfsdk:"uri"`
@@ -28,12 +28,12 @@ type ECRImageDataSourceModel struct {
 	GitSha            types.String `tfsdk:"git_sha"`
 }
 
-func (e ECRImageDataSource) Metadata(ctx context.Context, request datasource.MetadataRequest,
+func (e ECSImageDataSource) Metadata(ctx context.Context, request datasource.MetadataRequest,
 	response *datasource.MetadataResponse) {
-	response.TypeName = request.ProviderTypeName + "_ecr_image"
+	response.TypeName = request.ProviderTypeName + "_ecs_image"
 }
 
-func (e ECRImageDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
+func (e ECSImageDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
 	response.Schema = schema.Schema{
 		MarkdownDescription: "Get information about a specific artifact version. " +
 			"Artifacts are uploaded to ECR during the CI process. " +
@@ -71,7 +71,7 @@ func (e ECRImageDataSource) Schema(ctx context.Context, request datasource.Schem
 	}
 }
 
-func (e *ECRImageDataSource) Configure(ctx context.Context, request datasource.ConfigureRequest, response *datasource.ConfigureResponse) {
+func (e *ECSImageDataSource) Configure(ctx context.Context, request datasource.ConfigureRequest, response *datasource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if request.ProviderData == nil {
 		return
@@ -91,16 +91,16 @@ func (e *ECRImageDataSource) Configure(ctx context.Context, request datasource.C
 	e.client = configuration.VersionHandlerClientV2
 }
 
-func (e ECRImageDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
-	var state ECRImageDataSourceModel
+func (e ECSImageDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
+	var state ECSImageDataSourceModel
 	response.Diagnostics.Append(request.Config.Get(ctx, &state)...)
 
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	var version version_handler_v2.ECRVersion
-	err := e.client.ReadECRImage(state.ECRRepositoryName.ValueString(), &version)
+	var version version_handler_v2.ECSVersion
+	err := e.client.ReadECSImage(state.ECRRepositoryName.ValueString(), &version)
 	if err != nil {
 		response.Diagnostics.AddError(
 			"Unable to find the ECR Image",

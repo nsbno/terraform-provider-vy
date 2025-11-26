@@ -10,25 +10,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func testAccECRImageConfig(mockServerHost string) string {
+func testAccECSImageConfig(mockServerHost string) string {
 	return fmt.Sprintf(`
 provider "vy" {
 	environment = "test"
 	version_handler_v2_base_url = "%s"
 }
 
-data "vy_ecr_image" "this" {
+data "vy_ecs_image" "this" {
 	ecr_repository_name = "my-service"
 }
 `, mockServerHost)
 }
 
-func TestAccECRImage_Basic(t *testing.T) {
+func TestAccECSImage_Basic(t *testing.T) {
 	// Create a mock HTTP server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v2/ecr/versions/my-service" {
+		if r.URL.Path != "/v2/ecs/versions/my-service" {
 			w.WriteHeader(http.StatusNotFound)
-			_, _ = w.Write([]byte(fmt.Sprintf("ECR repository not found: %s", r.URL.Path)))
+			_, _ = w.Write([]byte(fmt.Sprintf("ECS repository not found: %s", r.URL.Path)))
 			return
 		}
 
@@ -51,13 +51,13 @@ func TestAccECRImage_Basic(t *testing.T) {
 	// Extract host from URL (strip http://)
 	mockServerHost := mockServer.URL[7:] // Remove "http://" prefix
 
-	expectedResourceName := "data.vy_ecr_image.this"
+	expectedResourceName := "data.vy_ecs_image.this"
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccECRImageConfig(mockServerHost),
+				Config: testAccECSImageConfig(mockServerHost),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(expectedResourceName, "ecr_repository_name", "my-service"),
 					resource.TestCheckResourceAttr(expectedResourceName, "uri", "123456789012.dkr.ecr.eu-west-1.amazonaws.com/my-service:latest"),

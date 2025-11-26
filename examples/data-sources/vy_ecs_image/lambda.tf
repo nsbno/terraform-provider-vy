@@ -1,5 +1,7 @@
 # Get information about an ECR Image based on ECR Repository Name
-data "vy_ecr_image" "this" {
+data "vy_ecs_image" "this" {
+  github_repository_name = "infrademo-demo-app"
+
   ecr_repository_name = "infrademo-demo-app"
 }
 
@@ -9,5 +11,5 @@ module "lambda" {
 
   service_name  = "my-function"
   artifact_type = "ecr"
-  image         = data.vy_ecr_image.this
+  image         = data.vy_ecs_image.this
 }

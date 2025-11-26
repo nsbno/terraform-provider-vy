@@ -10,39 +10,39 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func testS3ArtifactConfig(mockServerHost string) string {
+func testLambdaArtifactConfig(mockServerHost string) string {
 	return fmt.Sprintf(`
 provider "vy" {
 	environment = "test"
 	version_handler_v2_base_url = "%s"
 }
 
-data "vy_s3_artifact" "this" {
+data "vy_lambda_artifact" "this" {
 	github_repository_name = "infrademo-demo-app"
 }
 `, mockServerHost)
 }
 
-func testS3ArtifactConfigWithWorkingDirectory(mockServerHost string) string {
+func testLambdaArtifactConfigWithWorkingDirectory(mockServerHost string) string {
 	return fmt.Sprintf(`
 provider "vy" {
 	environment = "test"
 	version_handler_v2_base_url = "%s"
 }
 
-data "vy_s3_artifact" "this" {
+data "vy_lambda_artifact" "this" {
 	github_repository_name = "infrademo-demo-app"
 	working_directory = "lambda-function"
 }
 `, mockServerHost)
 }
 
-func TestS3Artifact_Basic(t *testing.T) {
+func TestLambdaArtifact_Basic(t *testing.T) {
 	// Create a mock HTTP server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v2/s3/versions/infrademo-demo-app" {
+		if r.URL.Path != "/v2/lambda/versions/infrademo-demo-app" {
 			w.WriteHeader(http.StatusNotFound)
-			_, _ = w.Write([]byte(fmt.Sprintf("S3 Artifact not found: %s", r.URL.Path)))
+			_, _ = w.Write([]byte(fmt.Sprintf("Lambda Artifact not found: %s", r.URL.Path)))
 			return
 		}
 
@@ -64,13 +64,13 @@ func TestS3Artifact_Basic(t *testing.T) {
 	// Extract host from URL (strip http://)
 	mockServerHost := mockServer.URL[7:] // Remove "http://" prefix
 
-	expectedResourceName := "data.vy_s3_artifact.this"
+	expectedResourceName := "data.vy_lambda_artifact.this"
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testS3ArtifactConfig(mockServerHost),
+				Config: testLambdaArtifactConfig(mockServerHost),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(expectedResourceName, "github_repository_name", "infrademo-demo-app"),
 					resource.TestCheckResourceAttr(expectedResourceName, "uri", "s3://123456789012-deployment-delivery-pipeline/infrademo-demo-app/abc123.zip"),
@@ -84,12 +84,12 @@ func TestS3Artifact_Basic(t *testing.T) {
 	})
 }
 
-func TestS3Artifact_WithWorkingDirectory(t *testing.T) {
+func TestLambdaArtifact_WithWorkingDirectory(t *testing.T) {
 	// Create a mock HTTP server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v2/s3/versions/infrademo-demo-app/lambda-function" {
+		if r.URL.Path != "/v2/lambda/versions/infrademo-demo-app/lambda-function" {
 			w.WriteHeader(http.StatusNotFound)
-			_, _ = w.Write([]byte(fmt.Sprintf("S3 Artifact not found: %s", r.URL.Path)))
+			_, _ = w.Write([]byte(fmt.Sprintf("Lambda Artifact not found: %s", r.URL.Path)))
 			return
 		}
 
@@ -111,13 +111,13 @@ func TestS3Artifact_WithWorkingDirectory(t *testing.T) {
 	// Extract host from URL (strip http://)
 	mockServerHost := mockServer.URL[7:] // Remove "http://" prefix
 
-	expectedResourceName := "data.vy_s3_artifact.this"
+	expectedResourceName := "data.vy_lambda_artifact.this"
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testS3ArtifactConfigWithWorkingDirectory(mockServerHost),
+				Config: testLambdaArtifactConfigWithWorkingDirectory(mockServerHost),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(expectedResourceName, "github_repository_name", "infrademo-demo-app"),
 					resource.TestCheckResourceAttr(expectedResourceName, "working_directory", "lambda-function"),

@@ -10,19 +10,19 @@ import (
 	"github.com/nsbno/terraform-provider-vy/internal/version_handler_v2"
 )
 
-func NewS3ArtifactDataSource() datasource.DataSource {
-	return &S3ArtifactDataSource{}
+func NewLambdaArtifactDataSource() datasource.DataSource {
+	return &LambdaArtifactDataSource{}
 }
 
-type S3ArtifactDataSource struct {
+type LambdaArtifactDataSource struct {
 	client *version_handler_v2.Client
 }
 
-func (s S3ArtifactDataSource) Metadata(ctx context.Context, request datasource.MetadataRequest, response *datasource.MetadataResponse) {
-	response.TypeName = request.ProviderTypeName + "_s3_artifact"
+func (s LambdaArtifactDataSource) Metadata(ctx context.Context, request datasource.MetadataRequest, response *datasource.MetadataResponse) {
+	response.TypeName = request.ProviderTypeName + "_lambda_artifact"
 }
 
-func (s S3ArtifactDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
+func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
 	response.Schema = schema.Schema{
 		MarkdownDescription: "Get information from a specific artifact version in S3. " +
 			"Artifacts are uploaded to S3 during the CI process. " +
@@ -68,7 +68,7 @@ func (s S3ArtifactDataSource) Schema(ctx context.Context, request datasource.Sch
 
 }
 
-func (s *S3ArtifactDataSource) Configure(ctx context.Context, request datasource.ConfigureRequest, response *datasource.ConfigureResponse) {
+func (s *LambdaArtifactDataSource) Configure(ctx context.Context, request datasource.ConfigureRequest, response *datasource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if request.ProviderData == nil {
 		return
@@ -88,7 +88,7 @@ func (s *S3ArtifactDataSource) Configure(ctx context.Context, request datasource
 	s.client = configuration.VersionHandlerClientV2
 }
 
-type S3ArtifactDataSourceModel struct {
+type LambdaArtifactDataSourceModel struct {
 	Id                   types.String `tfsdk:"id"`
 	GitHubRepositoryName types.String `tfsdk:"github_repository_name"`
 	WorkingDirectory     types.String `tfsdk:"working_directory"`
@@ -99,16 +99,16 @@ type S3ArtifactDataSourceModel struct {
 	GitSha               types.String `tfsdk:"git_sha"`
 }
 
-func (s S3ArtifactDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
-	var state S3ArtifactDataSourceModel
+func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
+	var state LambdaArtifactDataSourceModel
 	response.Diagnostics.Append(request.Config.Get(ctx, &state)...)
 
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	var version version_handler_v2.S3Artifact
-	err := s.client.ReadS3Artifact(state.GitHubRepositoryName.ValueString(), state.WorkingDirectory.ValueString(), &version)
+	var version version_handler_v2.LambdaArtifact
+	err := s.client.ReadLambdaArtifact(state.GitHubRepositoryName.ValueString(), state.WorkingDirectory.ValueString(), &version)
 	if err != nil {
 		errorMessage := fmt.Sprintf("Could not find the version for artifact %s. %s",
 			state.GitHubRepositoryName.String(), err.Error())

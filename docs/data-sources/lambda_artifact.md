@@ -1,11 +1,11 @@
 ---
-page_title: "Data Source vy_s3_artifact - vy"
+page_title: "Data Source vy_lambda_artifact - vy"
 subcategory: "Version Handler V2"
 description: |-
   Get information from a specific artifact version in S3. Artifacts are uploaded to S3 during the CI process. We assume that each GitHub Repository in a given directory has the same artifact version based on Git sha. e.g. multiple lambda functions in a directory in a GitHub repository will have the same artifact version.
 ---
 
-# Data Source: vy_s3_artifact
+# Data Source: vy_lambda_artifact
 
 Get information from a specific artifact version in S3. Artifacts are uploaded to S3 during the CI process. We assume that each GitHub Repository in a given directory has the same artifact version based on Git sha. e.g. multiple lambda functions in a directory in a GitHub repository will have the same artifact version.
 
@@ -13,7 +13,7 @@ Get information from a specific artifact version in S3. Artifacts are uploaded t
 
 ```terraform
 # Get information about an S3 artifact based on GitHub repository name
-data "vy_s3_artifact" "this" {
+data "vy_lambda_artifact" "this" {
   github_repository_name = "infrademo-demo-app"
 }
 
@@ -23,7 +23,7 @@ module "lambda" {
 
   service_name  = "my-function"
   artifact_type = "s3"
-  artifact      = data.vy_s3_artifact.this
+  artifact      = data.vy_lambda_artifact.this
 }
 ```
 
@@ -31,7 +31,7 @@ module "lambda" {
 
 ```terraform
 # For monorepos, you can specify a working directory within the repository where the lambda code is stored
-data "vy_s3_artifact" "user_service" {
+data "vy_lambda_artifact" "user_service" {
   github_repository_name = "infrademo-demo-app"
   working_directory      = "services/user_service"
 }
@@ -42,7 +42,7 @@ module "lambda" {
 
   service_name  = "my-function"
   artifact_type = "s3"
-  artifact      = data.vy_s3_artifact.user_service
+  artifact      = data.vy_lambda_artifact.user_service
 }
 ```
 

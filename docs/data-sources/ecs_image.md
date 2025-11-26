@@ -1,11 +1,11 @@
 ---
-page_title: "Data Source vy_ecr_image - vy"
+page_title: "Data Source vy_ecs_image - vy"
 subcategory: "Version Handler V2"
 description: |-
   Get information about a specific artifact version. Artifacts are uploaded to ECR during the CI process. Each unique service (Lambda or ECS) should have its own ECR repository.
 ---
 
-# Data Source: vy_ecr_image
+# Data Source: vy_ecs_image
 
 Get information about a specific artifact version. Artifacts are uploaded to ECR during the CI process. Each unique service (Lambda or ECS) should have its own ECR repository.
 
@@ -13,7 +13,7 @@ Get information about a specific artifact version. Artifacts are uploaded to ECR
 
 ```terraform
 # Get information about an ECR Image based on ECR Repository Name
-data "vy_ecr_image" "this" {
+data "vy_ecs_image" "this" {
   ecr_repository_name = "infrademo-demo-app"
 }
 
@@ -23,7 +23,7 @@ module "task" {
 
   application_container = {
 	name  = "backend"
-	image = data.vy_ecr_image.this
+	image = data.vy_ecs_image.this
   }
 }
 ```
@@ -32,7 +32,7 @@ module "task" {
 
 ```terraform
 # Get information about an ECR Image based on ECR Repository Name
-data "vy_ecr_image" "this" {
+data "vy_ecs_image" "this" {
   ecr_repository_name = "infrademo-demo-app"
 }
 
@@ -42,7 +42,7 @@ module "lambda" {
 
   service_name  = "my-function"
   artifact_type = "ecr"
-  image         = data.vy_ecr_image.this
+  image         = data.vy_ecs_image.this
 }
 ```
 

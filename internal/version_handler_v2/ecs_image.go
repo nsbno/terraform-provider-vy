@@ -10,7 +10,7 @@ import (
 	"github.com/nsbno/terraform-provider-vy/internal/aws_auth"
 )
 
-type ECRVersion struct {
+type ECSVersion struct {
 	ECRRepositoryName string `json:"ecr_repository_name"`
 	URI               string `json:"uri"`
 	Store             string `json:"store"`
@@ -19,12 +19,12 @@ type ECRVersion struct {
 	GitSha            string `json:"git_sha"`
 }
 
-func (c Client) ReadECRImage(ecrRepositoryName string, ecrVersion *ECRVersion) error {
-	url := fmt.Sprintf("https://%s/v2/ecr/versions/%s", c.BaseUrl, ecrRepositoryName)
+func (c Client) ReadECSImage(ecrRepositoryName string, ecsVersion *ECSVersion) error {
+	url := fmt.Sprintf("https://%s/v2/ecs/versions/%s", c.BaseUrl, ecrRepositoryName)
 
 	// If HTTPClient is set (for testing), construct URL without https:// prefix
 	if c.HTTPClient != nil {
-		url = fmt.Sprintf("http://%s/v2/ecr/versions/%s", c.BaseUrl, ecrRepositoryName)
+		url = fmt.Sprintf("http://%s/v2/ecs/versions/%s", c.BaseUrl, ecrRepositoryName)
 	}
 
 	request, err := http.NewRequest(
@@ -57,7 +57,7 @@ func (c Client) ReadECRImage(ecrRepositoryName string, ecrVersion *ECRVersion) e
 		return errors.New(fmt.Sprintf("could not find ECR Image. %s", str))
 	}
 
-	err = json.NewDecoder(response.Body).Decode(ecrVersion)
+	err = json.NewDecoder(response.Body).Decode(ecsVersion)
 	if err != nil {
 		return err
 	}

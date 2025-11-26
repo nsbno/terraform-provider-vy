@@ -1,5 +1,5 @@
 # For monorepos, you can specify a working directory within the repository where the lambda code is stored
-data "vy_s3_artifact" "user_service" {
+data "vy_lambda_artifact" "user_service" {
   github_repository_name = "infrademo-demo-app"
   working_directory      = "services/user_service"
 }
@@ -10,5 +10,5 @@ module "lambda" {
 
   service_name  = "my-function"
   artifact_type = "s3"
-  artifact      = data.vy_s3_artifact.user_service
+  artifact      = data.vy_lambda_artifact.user_service
 }

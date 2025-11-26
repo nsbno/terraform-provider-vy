@@ -11,7 +11,7 @@ import (
 	"github.com/nsbno/terraform-provider-vy/internal/aws_auth"
 )
 
-type S3Artifact struct {
+type LambdaArtifact struct {
 	GitHubRepositoryName string `json:"github_repository_name"`
 	WorkingDirectory     string `json:"working_directory"`
 	URI                  string `json:"uri"`
@@ -21,22 +21,22 @@ type S3Artifact struct {
 	GitSha               string `json:"git_sha"`
 }
 
-func (c Client) ReadS3Artifact(githubRepositoryName string, workingDirectory string, s3artifact *S3Artifact) error {
+func (c Client) ReadLambdaArtifact(githubRepositoryName string, workingDirectory string, lambdaArtifact *LambdaArtifact) error {
 	var url string
 	if workingDirectory != "" {
 		splitWorkingDirectory := strings.Split(workingDirectory, "/")
 		lastPart := splitWorkingDirectory[len(splitWorkingDirectory)-1]
 
-		url = fmt.Sprintf("https://%s/v2/s3/versions/%s/%s", c.BaseUrl, githubRepositoryName, lastPart)
+		url = fmt.Sprintf("https://%s/v2/lambda/versions/%s/%s", c.BaseUrl, githubRepositoryName, lastPart)
 		// If HTTPClient is set (for testing), construct URL without https:// prefix
 		if c.HTTPClient != nil {
-			url = fmt.Sprintf("http://%s/v2/s3/versions/%s/%s", c.BaseUrl, githubRepositoryName, lastPart)
+			url = fmt.Sprintf("http://%s/v2/lambda/versions/%s/%s", c.BaseUrl, githubRepositoryName, lastPart)
 		}
 	} else {
-		url = fmt.Sprintf("https://%s/v2/s3/versions/%s", c.BaseUrl, githubRepositoryName)
+		url = fmt.Sprintf("https://%s/v2/lambda/versions/%s", c.BaseUrl, githubRepositoryName)
 		// If HTTPClient is set (for testing), construct URL without https:// prefix
 		if c.HTTPClient != nil {
-			url = fmt.Sprintf("http://%s/v2/s3/versions/%s", c.BaseUrl, githubRepositoryName)
+			url = fmt.Sprintf("http://%s/v2/lambda/versions/%s", c.BaseUrl, githubRepositoryName)
 		}
 	}
 
@@ -70,7 +70,7 @@ func (c Client) ReadS3Artifact(githubRepositoryName string, workingDirectory str
 		return errors.New(fmt.Sprintf("could not find S3 Artifact. %s", str))
 	}
 
-	err = json.NewDecoder(response.Body).Decode(s3artifact)
+	err = json.NewDecoder(response.Body).Decode(lambdaArtifact)
 	if err != nil {
 		return err
 	}
