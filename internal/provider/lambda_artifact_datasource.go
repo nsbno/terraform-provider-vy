@@ -25,7 +25,7 @@ func (s LambdaArtifactDataSource) Metadata(ctx context.Context, request datasour
 func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
 	response.Schema = schema.Schema{
 		MarkdownDescription: "Get information about a specific Lambda artifact version. " +
-			"Artifacts are uploaded to S3 during the CI process.",
+			"Artifacts are uploaded to S3 or ECR during the CI process.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -50,6 +50,12 @@ func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource
 			"service_account_id": schema.StringAttribute{
 				MarkdownDescription: "The service account ID that was used to build the artifact.",
 				Computed:            true,
+			},
+			"ecr_repository_name": schema.StringAttribute{
+				MarkdownDescription: "*Only if artifact type is ECR.* " +
+					"The ECR repository name where the Lambda image is stored. " +
+					"Used to override the name set automatically during CI.",
+				Optional: true,
 			},
 			"region": schema.StringAttribute{
 				MarkdownDescription: "The AWS region where the artifact is stored.",
@@ -87,6 +93,7 @@ type LambdaArtifactDataSourceModel struct {
 	GitSha               types.String `tfsdk:"git_sha"`
 	Branch               types.String `tfsdk:"branch"`
 	ServiceAccountID     types.String `tfsdk:"service_account_id"`
+	ECRRepositoryName    types.String `tfsdk:"ecr_repository_name"`
 	Region               types.String `tfsdk:"region"`
 }
 
@@ -118,10 +125,12 @@ func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.R
 	} else {
 		state.Id = state.GitHubRepositoryName
 	}
+	state.WorkingDirectory = types.StringValue(version.WorkingDirectory)
 	state.GitSha = types.StringValue(version.GitSha)
 	state.Branch = types.StringValue(version.Branch)
 	state.ServiceAccountID = types.StringValue(version.ServiceAccountID)
 	state.Region = types.StringValue(version.Region)
+	state.ECRRepositoryName = types.StringValue(version.ECRRepositoryName)
 
 	response.Diagnostics.Append(response.State.Set(ctx, &state)...)
 }

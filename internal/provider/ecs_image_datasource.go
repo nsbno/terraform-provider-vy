@@ -69,8 +69,9 @@ func (e ECSImageDataSource) Schema(ctx context.Context, request datasource.Schem
 				Computed:            true,
 			},
 			"ecr_repository_name": schema.StringAttribute{
-				MarkdownDescription: "The ECR repository name where the image is stored.",
-				Computed:            true,
+				MarkdownDescription: "The ECR repository name where the image is stored. " +
+					"Used to override the name set automatically during CI.",
+				Optional: true,
 			},
 			"ecr_repository_uri": schema.StringAttribute{
 				MarkdownDescription: "The ECR repository URI where the image is stored.",
@@ -133,8 +134,17 @@ func (e ECSImageDataSource) Read(ctx context.Context, request datasource.ReadReq
 	state.Branch = types.StringValue(version.Branch)
 	state.ServiceAccountID = types.StringValue(version.ServiceAccountID)
 	state.Region = types.StringValue(version.Region)
-	state.ECRRepositoryName = types.StringValue(version.ECRRepositoryName)
-	state.ECRRepositoryURI = types.StringValue(version.ECRRepositoryURI)
+
+	// If overrides the repo name
+	if !state.ECRRepositoryName.IsNull() && state.ECRRepositoryName.ValueString() != "" {
+		state.ECRRepositoryName = types.StringValue(state.ECRRepositoryName.ValueString())
+		state.ECRRepositoryURI = types.StringValue(fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s",
+			state.ServiceAccountID.ValueString(), state.Region.ValueString(), state.ECRRepositoryName.ValueString()))
+	} else {
+		// Use values from API
+		state.ECRRepositoryName = types.StringValue(version.ECRRepositoryName)
+		state.ECRRepositoryURI = types.StringValue(version.ECRRepositoryURI)
+	}
 
 	response.Diagnostics.Append(response.State.Set(ctx, &state)...)
 }

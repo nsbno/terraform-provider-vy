@@ -16,6 +16,7 @@ type LambdaArtifact struct {
 	GitSha               string `json:"git_sha"`
 	Branch               string `json:"branch"`
 	ServiceAccountID     string `json:"service_account_id"`
+	ECRRepositoryName    string `json:"ecr_repository_name"`
 	Region               string `json:"region"`
 }
 

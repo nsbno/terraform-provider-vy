@@ -23,20 +23,6 @@ data "vy_lambda_artifact" "this" {
 `, mockServerHost)
 }
 
-func testLambdaArtifactConfigWithWorkingDirectory(mockServerHost string) string {
-	return fmt.Sprintf(`
-provider "vy" {
-	environment = "test"
-	version_handler_v2_base_url = "%s"
-}
-
-data "vy_lambda_artifact" "this" {
-	github_repository_name = "infrademo-demo-app"
-	working_directory = "lambda-function"
-}
-`, mockServerHost)
-}
-
 func TestLambdaArtifact_Basic(t *testing.T) {
 	// Create a mock HTTP server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +68,20 @@ func TestLambdaArtifact_Basic(t *testing.T) {
 			},
 		},
 	})
+}
+
+func testLambdaArtifactConfigWithWorkingDirectory(mockServerHost string) string {
+	return fmt.Sprintf(`
+provider "vy" {
+	environment = "test"
+	version_handler_v2_base_url = "%s"
+}
+
+data "vy_lambda_artifact" "this" {
+	github_repository_name = "infrademo-demo-app"
+	working_directory = "services/lambda-function"
+}
+`, mockServerHost)
 }
 
 func TestLambdaArtifact_WithWorkingDirectory(t *testing.T) {
