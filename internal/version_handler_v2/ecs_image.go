@@ -11,20 +11,30 @@ import (
 )
 
 type ECSVersion struct {
-	ECRRepositoryName string `json:"ecr_repository_name"`
-	URI               string `json:"uri"`
-	Store             string `json:"store"`
-	Path              string `json:"path"`
-	Version           string `json:"version"`
-	GitSha            string `json:"git_sha"`
+	GitHubRepositoryName string `json:"github_repository_name"`
+	WorkingDirectory     string `json:"working_directory"`
+	GitSha               string `json:"git_sha"`
+	Branch               string `json:"branch"`
+	ServiceAccountID     string `json:"service_account_id"`
+	Region               string `json:"region"`
+	ECRRepositoryName    string `json:"ecr_repository_name"`
+	ECRRepositoryURI     string `json:"ecr_repository_uri"`
 }
 
-func (c Client) ReadECSImage(ecrRepositoryName string, ecsVersion *ECSVersion) error {
-	url := fmt.Sprintf("https://%s/v2/ecs/versions/%s", c.BaseUrl, ecrRepositoryName)
-
-	// If HTTPClient is set (for testing), construct URL without https:// prefix
-	if c.HTTPClient != nil {
-		url = fmt.Sprintf("http://%s/v2/ecs/versions/%s", c.BaseUrl, ecrRepositoryName)
+func (c Client) ReadECSImage(githubRepositoryName string, workingDirectory string, ecsVersion *ECSVersion) error {
+	var url string
+	if workingDirectory != "" {
+		url = fmt.Sprintf("https://%s/v2/versions/%s/ecs/%s", c.BaseUrl, githubRepositoryName, workingDirectory)
+		// If HTTPClient is set (for testing), construct URL without https:// prefix
+		if c.HTTPClient != nil {
+			url = fmt.Sprintf("http://%s/v2/versions/%s/ecs/%s", c.BaseUrl, githubRepositoryName, workingDirectory)
+		}
+	} else {
+		url = fmt.Sprintf("https://%s/v2/versions/%s/ecs", c.BaseUrl, githubRepositoryName)
+		// If HTTPClient is set (for testing), construct URL without https:// prefix
+		if c.HTTPClient != nil {
+			url = fmt.Sprintf("http://%s/v2/versions/%s/ecs", c.BaseUrl, githubRepositoryName)
+		}
 	}
 
 	request, err := http.NewRequest(
@@ -54,7 +64,7 @@ func (c Client) ReadECSImage(ecrRepositoryName string, ecsVersion *ECSVersion) e
 	if response.StatusCode != 200 {
 		str, _ := io.ReadAll(response.Body)
 
-		return errors.New(fmt.Sprintf("could not find ECR Image. %s", str))
+		return errors.New(fmt.Sprintf("could not find ECS Image. %s", str))
 	}
 
 	err = json.NewDecoder(response.Body).Decode(ecsVersion)

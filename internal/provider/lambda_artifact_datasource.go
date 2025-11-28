@@ -24,11 +24,8 @@ func (s LambdaArtifactDataSource) Metadata(ctx context.Context, request datasour
 
 func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
 	response.Schema = schema.Schema{
-		MarkdownDescription: "Get information from a specific artifact version in S3. " +
-			"Artifacts are uploaded to S3 during the CI process. " +
-			"We assume that each GitHub Repository in a given directory has the same artifact version based on" +
-			" Git sha. e.g. multiple lambda functions in a directory in a GitHub repository will have the same" +
-			" artifact version.",
+		MarkdownDescription: "Get information about a specific Lambda artifact version. " +
+			"Artifacts are uploaded to S3 during the CI process.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -42,26 +39,21 @@ func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource
 				MarkdownDescription: "The directory in the GitHub repository to find the artifact for.",
 				Optional:            true,
 			},
-			"uri": schema.StringAttribute{
-				MarkdownDescription: "The URI of the S3 artifact.",
-				Computed:            true,
-			},
-			"store": schema.StringAttribute{
-				MarkdownDescription: "The S3 Bucket name where the artifact is stored.",
-				Computed:            true,
-			},
-			"path": schema.StringAttribute{
-				MarkdownDescription: "The S3 key for the artifact.",
-				Computed:            true,
-			},
-			"version": schema.StringAttribute{
-				MarkdownDescription: "The version of the S3 artifact, which is the object version ID.",
-				Computed:            true,
-			},
 			"git_sha": schema.StringAttribute{
-				MarkdownDescription: "The Git SHA of the commit that was used to build the artifact. " +
-					"Used as S3 filename.",
-				Computed: true,
+				MarkdownDescription: "The Git SHA of the commit that was used to build the artifact.",
+				Computed:            true,
+			},
+			"branch": schema.StringAttribute{
+				MarkdownDescription: "The Git branch of the commit that was used to build the artifact.",
+				Computed:            true,
+			},
+			"service_account_id": schema.StringAttribute{
+				MarkdownDescription: "The service account ID that was used to build the artifact.",
+				Computed:            true,
+			},
+			"region": schema.StringAttribute{
+				MarkdownDescription: "The AWS region where the artifact is stored.",
+				Computed:            true,
 			},
 		},
 	}
@@ -92,11 +84,10 @@ type LambdaArtifactDataSourceModel struct {
 	Id                   types.String `tfsdk:"id"`
 	GitHubRepositoryName types.String `tfsdk:"github_repository_name"`
 	WorkingDirectory     types.String `tfsdk:"working_directory"`
-	URI                  types.String `tfsdk:"uri"`
-	Store                types.String `tfsdk:"store"`
-	Path                 types.String `tfsdk:"path"`
-	Version              types.String `tfsdk:"version"`
 	GitSha               types.String `tfsdk:"git_sha"`
+	Branch               types.String `tfsdk:"branch"`
+	ServiceAccountID     types.String `tfsdk:"service_account_id"`
+	Region               types.String `tfsdk:"region"`
 }
 
 func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
@@ -110,13 +101,14 @@ func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.R
 	var version version_handler_v2.LambdaArtifact
 	err := s.client.ReadLambdaArtifact(state.GitHubRepositoryName.ValueString(), state.WorkingDirectory.ValueString(), &version)
 	if err != nil {
-		errorMessage := fmt.Sprintf("Could not find the version for artifact %s. %s",
+		errorMessage := fmt.Sprintf("Could not find Lambda artifact for repository %s. %s",
 			state.GitHubRepositoryName.String(), err.Error())
 		if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
-			errorMessage = fmt.Sprintf("Could not find the version for artifact %s/%s. %s", state.GitHubRepositoryName.String(), workingDir, err.Error())
+			errorMessage = fmt.Sprintf("Could not find Lambda artifact for repository %s/%s. %s",
+				state.GitHubRepositoryName.String(), workingDir, err.Error())
 		}
 		response.Diagnostics.AddError(
-			"Unable to read S3 artifact version",
+			"Unable to read Lambda artifact version",
 			errorMessage,
 		)
 	}
@@ -126,11 +118,10 @@ func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.R
 	} else {
 		state.Id = state.GitHubRepositoryName
 	}
-	state.URI = types.StringValue(version.URI)
-	state.Store = types.StringValue(version.Store)
-	state.Path = types.StringValue(version.Path)
-	state.Version = types.StringValue(version.Version)
 	state.GitSha = types.StringValue(version.GitSha)
+	state.Branch = types.StringValue(version.Branch)
+	state.ServiceAccountID = types.StringValue(version.ServiceAccountID)
+	state.Region = types.StringValue(version.Region)
 
 	response.Diagnostics.Append(response.State.Set(ctx, &state)...)
 }

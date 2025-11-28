@@ -40,19 +40,20 @@ data "vy_lambda_artifact" "this" {
 func TestLambdaArtifact_Basic(t *testing.T) {
 	// Create a mock HTTP server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v2/lambda/versions/infrademo-demo-app" {
+		if r.URL.Path != "/v2/versions/infrademo-demo-app/lambda" {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(fmt.Sprintf("Lambda Artifact not found: %s", r.URL.Path)))
 			return
 		}
 
-		// Return mock S3 version data as JSON
+		// Return mock Lambda artifact data as JSON
 		mockResponse := map[string]string{
-			"uri":     "s3://123456789012-deployment-delivery-pipeline/infrademo-demo-app/abc123.zip",
-			"store":   "s3",
-			"path":    "latest",
-			"version": "abc123def456",
-			"git_sha": "abc123",
+			"github_repository_name": "infrademo-demo-app",
+			"working_directory":      "",
+			"git_sha":                "abc123",
+			"branch":                 "main",
+			"service_account_id":     "123456789012",
+			"region":                 "eu-west-1",
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -73,11 +74,10 @@ func TestLambdaArtifact_Basic(t *testing.T) {
 				Config: testLambdaArtifactConfig(mockServerHost),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(expectedResourceName, "github_repository_name", "infrademo-demo-app"),
-					resource.TestCheckResourceAttr(expectedResourceName, "uri", "s3://123456789012-deployment-delivery-pipeline/infrademo-demo-app/abc123.zip"),
-					resource.TestCheckResourceAttr(expectedResourceName, "store", "s3"),
-					resource.TestCheckResourceAttr(expectedResourceName, "path", "latest"),
-					resource.TestCheckResourceAttr(expectedResourceName, "version", "abc123def456"),
 					resource.TestCheckResourceAttr(expectedResourceName, "git_sha", "abc123"),
+					resource.TestCheckResourceAttr(expectedResourceName, "branch", "main"),
+					resource.TestCheckResourceAttr(expectedResourceName, "service_account_id", "123456789012"),
+					resource.TestCheckResourceAttr(expectedResourceName, "region", "eu-west-1"),
 				),
 			},
 		},
@@ -87,19 +87,20 @@ func TestLambdaArtifact_Basic(t *testing.T) {
 func TestLambdaArtifact_WithWorkingDirectory(t *testing.T) {
 	// Create a mock HTTP server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v2/lambda/versions/infrademo-demo-app/lambda-function" {
+		if r.URL.Path != "/v2/versions/infrademo-demo-app/lambda/lambda-function" {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(fmt.Sprintf("Lambda Artifact not found: %s", r.URL.Path)))
 			return
 		}
 
-		// Return mock S3 version data as JSON
+		// Return mock Lambda artifact data as JSON
 		mockResponse := map[string]string{
-			"uri":     "s3://123456789012-deployment-delivery-pipeline/infrademo-demo-app/lambda-function/def456.zip",
-			"store":   "s3",
-			"path":    "lambda-function/latest",
-			"version": "def456abc123",
-			"git_sha": "def456",
+			"github_repository_name": "infrademo-demo-app",
+			"working_directory":      "lambda-function",
+			"git_sha":                "def456",
+			"branch":                 "main",
+			"service_account_id":     "123456789012",
+			"region":                 "eu-west-1",
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -121,11 +122,10 @@ func TestLambdaArtifact_WithWorkingDirectory(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(expectedResourceName, "github_repository_name", "infrademo-demo-app"),
 					resource.TestCheckResourceAttr(expectedResourceName, "working_directory", "lambda-function"),
-					resource.TestCheckResourceAttr(expectedResourceName, "uri", "s3://123456789012-deployment-delivery-pipeline/infrademo-demo-app/lambda-function/def456.zip"),
-					resource.TestCheckResourceAttr(expectedResourceName, "store", "s3"),
-					resource.TestCheckResourceAttr(expectedResourceName, "path", "lambda-function/latest"),
-					resource.TestCheckResourceAttr(expectedResourceName, "version", "def456abc123"),
 					resource.TestCheckResourceAttr(expectedResourceName, "git_sha", "def456"),
+					resource.TestCheckResourceAttr(expectedResourceName, "branch", "main"),
+					resource.TestCheckResourceAttr(expectedResourceName, "service_account_id", "123456789012"),
+					resource.TestCheckResourceAttr(expectedResourceName, "region", "eu-west-1"),
 				),
 			},
 		},

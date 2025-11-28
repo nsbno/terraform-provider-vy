@@ -19,13 +19,15 @@ type ECSImageDataSource struct {
 }
 
 type ECSImageDataSourceModel struct {
-	Id                types.String `tfsdk:"id"`
-	ECRRepositoryName types.String `tfsdk:"ecr_repository_name"`
-	URI               types.String `tfsdk:"uri"`
-	Store             types.String `tfsdk:"store"`
-	Path              types.String `tfsdk:"path"`
-	Version           types.String `tfsdk:"version"`
-	GitSha            types.String `tfsdk:"git_sha"`
+	Id                   types.String `tfsdk:"id"`
+	GitHubRepositoryName types.String `tfsdk:"github_repository_name"`
+	WorkingDirectory     types.String `tfsdk:"working_directory"`
+	GitSha               types.String `tfsdk:"git_sha"`
+	Branch               types.String `tfsdk:"branch"`
+	ServiceAccountID     types.String `tfsdk:"service_account_id"`
+	Region               types.String `tfsdk:"region"`
+	ECRRepositoryName    types.String `tfsdk:"ecr_repository_name"`
+	ECRRepositoryURI     types.String `tfsdk:"ecr_repository_uri"`
 }
 
 func (e ECSImageDataSource) Metadata(ctx context.Context, request datasource.MetadataRequest,
@@ -35,36 +37,43 @@ func (e ECSImageDataSource) Metadata(ctx context.Context, request datasource.Met
 
 func (e ECSImageDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
 	response.Schema = schema.Schema{
-		MarkdownDescription: "Get information about a specific artifact version. " +
-			"Artifacts are uploaded to ECR during the CI process. " +
-			"Each unique service (Lambda or ECS) should have its own ECR repository.",
+		MarkdownDescription: "Get information about a specific ECS image version. " +
+			"Images are uploaded to ECR during the CI process.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
 			},
-			"ecr_repository_name": schema.StringAttribute{
-				MarkdownDescription: "The ECR repository name to find the image for.",
+			"github_repository_name": schema.StringAttribute{
+				MarkdownDescription: "The GitHub repository name to find the image for.",
 				Required:            true,
 			},
-			"uri": schema.StringAttribute{
-				MarkdownDescription: "The full Image URI of the ECR Image. Prefixed with docker://",
+			"working_directory": schema.StringAttribute{
+				MarkdownDescription: "The directory in the GitHub repository to find the image for.",
+				Optional:            true,
+			},
+			"git_sha": schema.StringAttribute{
+				MarkdownDescription: "The Git SHA of the commit that was used to build the image.",
 				Computed:            true,
 			},
-			"store": schema.StringAttribute{
-				MarkdownDescription: "The ECR URI, in this format: `{registry_id}.dkr.ecr.{region}.amazonaws.com`",
+			"branch": schema.StringAttribute{
+				MarkdownDescription: "The Git branch of the commit that was used to build the image.",
 				Computed:            true,
 			},
-			"path": schema.StringAttribute{
+			"service_account_id": schema.StringAttribute{
+				MarkdownDescription: "The service account ID that was used to build the image.",
+				Computed:            true,
+			},
+			"region": schema.StringAttribute{
+				MarkdownDescription: "The AWS region where the image is stored.",
+				Computed:            true,
+			},
+			"ecr_repository_name": schema.StringAttribute{
 				MarkdownDescription: "The ECR repository name where the image is stored.",
 				Computed:            true,
 			},
-			"version": schema.StringAttribute{
-				MarkdownDescription: "The version of the ECR Image, which is the image digest.",
-				Computed:            true,
-			},
-			"git_sha": schema.StringAttribute{
-				MarkdownDescription: "The Git SHA of the commit that was used to build the image. Used to tag the image.",
+			"ecr_repository_uri": schema.StringAttribute{
+				MarkdownDescription: "The ECR repository URI where the image is stored.",
 				Computed:            true,
 			},
 		},
@@ -100,20 +109,32 @@ func (e ECSImageDataSource) Read(ctx context.Context, request datasource.ReadReq
 	}
 
 	var version version_handler_v2.ECSVersion
-	err := e.client.ReadECSImage(state.ECRRepositoryName.ValueString(), &version)
+	err := e.client.ReadECSImage(state.GitHubRepositoryName.ValueString(), state.WorkingDirectory.ValueString(), &version)
 	if err != nil {
+		errorMessage := fmt.Sprintf("Could not find ECS image for repository %s. %s",
+			state.GitHubRepositoryName.String(), err.Error())
+		if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
+			errorMessage = fmt.Sprintf("Could not find ECS image for repository %s/%s. %s",
+				state.GitHubRepositoryName.String(), workingDir, err.Error())
+		}
 		response.Diagnostics.AddError(
-			"Unable to find the ECR Image",
-			fmt.Sprintf("Could not find image in ECR Repo: %s. %s", state.ECRRepositoryName.String(), err.Error()),
+			"Unable to find the ECS Image",
+			errorMessage,
 		)
 	}
 
-	state.Id = state.ECRRepositoryName
-	state.URI = types.StringValue(version.URI)
-	state.Store = types.StringValue(version.Store)
-	state.Path = types.StringValue(version.Path)
-	state.Version = types.StringValue(version.Version)
+	if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
+		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), workingDir))
+	} else {
+		state.Id = state.GitHubRepositoryName
+	}
+	state.WorkingDirectory = types.StringValue(version.WorkingDirectory)
 	state.GitSha = types.StringValue(version.GitSha)
+	state.Branch = types.StringValue(version.Branch)
+	state.ServiceAccountID = types.StringValue(version.ServiceAccountID)
+	state.Region = types.StringValue(version.Region)
+	state.ECRRepositoryName = types.StringValue(version.ECRRepositoryName)
+	state.ECRRepositoryURI = types.StringValue(version.ECRRepositoryURI)
 
 	response.Diagnostics.Append(response.State.Set(ctx, &state)...)
 }

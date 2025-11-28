@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/nsbno/terraform-provider-vy/internal/aws_auth"
 )
@@ -14,29 +13,25 @@ import (
 type LambdaArtifact struct {
 	GitHubRepositoryName string `json:"github_repository_name"`
 	WorkingDirectory     string `json:"working_directory"`
-	URI                  string `json:"uri"`
-	Store                string `json:"store"`
-	Path                 string `json:"path"`
-	Version              string `json:"version"`
 	GitSha               string `json:"git_sha"`
+	Branch               string `json:"branch"`
+	ServiceAccountID     string `json:"service_account_id"`
+	Region               string `json:"region"`
 }
 
 func (c Client) ReadLambdaArtifact(githubRepositoryName string, workingDirectory string, lambdaArtifact *LambdaArtifact) error {
 	var url string
 	if workingDirectory != "" {
-		splitWorkingDirectory := strings.Split(workingDirectory, "/")
-		lastPart := splitWorkingDirectory[len(splitWorkingDirectory)-1]
-
-		url = fmt.Sprintf("https://%s/v2/lambda/versions/%s/%s", c.BaseUrl, githubRepositoryName, lastPart)
+		url = fmt.Sprintf("https://%s/v2/versions/%s/lambda/%s", c.BaseUrl, githubRepositoryName, workingDirectory)
 		// If HTTPClient is set (for testing), construct URL without https:// prefix
 		if c.HTTPClient != nil {
-			url = fmt.Sprintf("http://%s/v2/lambda/versions/%s/%s", c.BaseUrl, githubRepositoryName, lastPart)
+			url = fmt.Sprintf("http://%s/v2/versions/%s/lambda/%s", c.BaseUrl, githubRepositoryName, workingDirectory)
 		}
 	} else {
-		url = fmt.Sprintf("https://%s/v2/lambda/versions/%s", c.BaseUrl, githubRepositoryName)
+		url = fmt.Sprintf("https://%s/v2/versions/%s/lambda", c.BaseUrl, githubRepositoryName)
 		// If HTTPClient is set (for testing), construct URL without https:// prefix
 		if c.HTTPClient != nil {
-			url = fmt.Sprintf("http://%s/v2/lambda/versions/%s", c.BaseUrl, githubRepositoryName)
+			url = fmt.Sprintf("http://%s/v2/versions/%s/lambda", c.BaseUrl, githubRepositoryName)
 		}
 	}
 
@@ -67,7 +62,7 @@ func (c Client) ReadLambdaArtifact(githubRepositoryName string, workingDirectory
 	if response.StatusCode != 200 {
 		str, _ := io.ReadAll(response.Body)
 
-		return errors.New(fmt.Sprintf("could not find S3 Artifact. %s", str))
+		return errors.New(fmt.Sprintf("could not find Lambda Artifact. %s", str))
 	}
 
 	err = json.NewDecoder(response.Body).Decode(lambdaArtifact)
