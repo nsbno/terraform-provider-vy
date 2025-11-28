@@ -9,12 +9,18 @@ description: |-
 
 {{ .Description | trimspace }}
 
-## ECS Usage
+## Usage
 
-{{ tffile (printf "examples/data-sources/%s/ecs.tf" .Name)}}
+{{ tffile (printf "examples/data-sources/%s/main.tf" .Name)}}
 
-## Lambda Usage
+## Override ECR Repository
+Normally, the data source retrieve ECR images from the CI process where an image is packaged to ECR.
+This example shows how to override the default ECR repository used by the data source.
 
-{{ tffile (printf "examples/data-sources/%s/lambda.tf" .Name)}}
+{{ tffile (printf "examples/data-sources/%s/override-ecr.tf" .Name)}}
+
+## Monorepo Usage
+
+{{ tffile (printf "examples/data-sources/%s/monorepo.tf" .Name)}}
 
 {{ .SchemaMarkdown | trimspace }}

@@ -9,9 +9,13 @@ description: |-
 
 {{ .Description | trimspace }}
 
-## Main Usage
+## Using S3 Artifact
 
-{{ tffile (printf "examples/data-sources/%s/main.tf" .Name)}}
+{{ tffile (printf "examples/data-sources/%s/s3.tf" .Name)}}
+
+## Using ECR Images
+
+{{ tffile (printf "examples/data-sources/%s/ecr.tf" .Name)}}
 
 ## Mono Repo Usage
 

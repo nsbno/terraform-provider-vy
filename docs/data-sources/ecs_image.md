@@ -2,19 +2,18 @@
 page_title: "Data Source vy_ecs_image - vy"
 subcategory: "Version Handler V2"
 description: |-
-  Get information about a specific artifact version. Artifacts are uploaded to ECR during the CI process. Each unique service (Lambda or ECS) should have its own ECR repository.
+  Get information about a specific ECS image version. Images are uploaded to ECR during the CI process.
 ---
 
 # Data Source: vy_ecs_image
 
-Get information about a specific artifact version. Artifacts are uploaded to ECR during the CI process. Each unique service (Lambda or ECS) should have its own ECR repository.
+Get information about a specific ECS image version. Images are uploaded to ECR during the CI process.
 
-## ECS Usage
+## Usage
 
 ```terraform
-# Get information about an ECR Image based on ECR Repository Name
 data "vy_ecs_image" "this" {
-  ecr_repository_name = "infrademo-demo-app"
+  github_repository_name = "infrademo-demo-app"
 }
 
 # Use the version in an ECS task definition
@@ -22,27 +21,67 @@ module "task" {
   source = "github.com/nsbno/terraform-aws-ecs-service?ref=x.y.z"
 
   application_container = {
-	name  = "backend"
-	image = data.vy_ecs_image.this
+    name  = "backend"
+    image = data.vy_ecs_image.this
   }
 }
 ```
 
-## Lambda Usage
+## Override ECR Repository
+Normally, the data source retrieve ECR images from the CI process where an image is packaged to ECR.
+This example shows how to override the default ECR repository used by the data source.
 
 ```terraform
-# Get information about an ECR Image based on ECR Repository Name
 data "vy_ecs_image" "this" {
-  ecr_repository_name = "infrademo-demo-app"
+  github_repository_name = "infrademo-demo-app"
+
+  # To override the ECR repository name, specify it here
+  ecr_repository_name = "petstore-lambda"
 }
 
-# Use the image in a Lambda module
 module "lambda" {
-  source = "github.com/nsbno/terraform-aws-lambda?ref=x.y.z"
+  source = "github.com/nsbno/terraform-aws-ecs-service?ref=x.y.z"
 
-  service_name  = "my-function"
-  artifact_type = "ecr"
-  image         = data.vy_ecs_image.this
+  application_container = {
+    name  = "user-service"
+    image = data.vy_ecs_image.this
+  }
+}
+```
+
+## Monorepo Usage
+
+```terraform
+data "vy_ecs_image" "user_service" {
+  github_repository_name = "infrademo-demo-app"
+
+  # Path to the directory within the monorepo where the service code is located
+  working_directory = "services/user_service"
+}
+
+module "user_service_ecs" {
+  source = "github.com/nsbno/terraform-aws-ecs-service?ref=x.y.z"
+
+  application_container = {
+    name  = "user-service"
+    image = data.vy_ecs_image.user_service
+  }
+}
+
+data "vy_ecs_image" "payment_service" {
+  github_repository_name = "infrademo-demo-app"
+
+  # Path to the directory within the monorepo where the service code is located
+  working_directory = "services/payment_service"
+}
+
+module "payment_service_ecs" {
+  source = "github.com/nsbno/terraform-aws-ecs-service?ref=x.y.z"
+
+  application_container = {
+    name  = "payment-service"
+    image = data.vy_ecs_image.payment_service
+  }
 }
 ```
 
@@ -51,13 +90,18 @@ module "lambda" {
 
 ### Required
 
-- `ecr_repository_name` (String) The ECR repository name to find the image for.
+- `github_repository_name` (String) The GitHub repository name to find the image for.
+
+### Optional
+
+- `ecr_repository_name` (String) The ECR repository name where the image is stored. Used to override the name set automatically during CI.
+- `working_directory` (String) The directory in the GitHub repository to find the image for.
 
 ### Read-Only
 
-- `git_sha` (String) The Git SHA of the commit that was used to build the image. Used to tag the image.
+- `branch` (String) The Git branch of the commit that was used to build the image.
+- `ecr_repository_uri` (String) The ECR repository URI where the image is stored.
+- `git_sha` (String) The Git SHA of the commit that was used to build the image.
 - `id` (String) The ID of this resource.
-- `path` (String) The ECR repository name where the image is stored.
-- `store` (String) The ECR URI, in this format: `{registry_id}.dkr.ecr.{region}.amazonaws.com`
-- `uri` (String) The full Image URI of the ECR Image. Prefixed with docker://
-- `version` (String) The version of the ECR Image, which is the image digest.
+- `region` (String) The AWS region where the image is stored.
+- `service_account_id` (String) The service account ID that was used to build the image.

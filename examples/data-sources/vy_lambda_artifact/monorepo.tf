@@ -12,3 +12,16 @@ module "lambda" {
   artifact_type = "s3"
   artifact      = data.vy_lambda_artifact.user_service
 }
+
+data "vy_lambda_artifact" "payment_service" {
+  github_repository_name = "infrademo-demo-app"
+  working_directory      = "services/payment_service"
+}
+
+module "payment_lambda" {
+  source = "github.com/nsbno/terraform-aws-lambda?ref=x.y.z"
+
+  service_name  = "my-function"
+  artifact_type = "s3"
+  artifact      = data.vy_lambda_artifact.payment_service
+}
