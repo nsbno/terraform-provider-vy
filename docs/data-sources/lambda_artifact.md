@@ -33,6 +33,7 @@ module "lambda" {
 # Get information about an ECR Image based on GitHub repository name
 data "vy_lambda_artifact" "this" {
   github_repository_name = "infrademo-demo-app"
+  ecr_repository_name    = "infrademo-demo-repo"
 }
 
 # Use the ECR artifact in a Lambda module
@@ -92,6 +93,7 @@ module "payment_lambda" {
 ### Read-Only
 
 - `branch` (String) The Git branch of the commit that was used to build the artifact.
+- `bucket_name` (String) *Only if artifact type is S3.* The S3 bucket name where the Lambda artifact is stored.
 - `git_sha` (String) The Git SHA of the commit that was used to build the artifact.
 - `id` (String) The ID of this resource.
 - `region` (String) The AWS region where the artifact is stored.

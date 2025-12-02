@@ -1,5 +1,6 @@
 data "vy_ecs_image" "user_service" {
   github_repository_name = "infrademo-demo-app"
+  ecr_repository_name    = "infrademo-demo-repo"
 
   # Path to the directory within the monorepo where the service code is located
   working_directory = "services/user_service"
@@ -16,6 +17,7 @@ module "user_service_ecs" {
 
 data "vy_ecs_image" "payment_service" {
   github_repository_name = "infrademo-demo-app"
+  ecr_repository_name    = "infrademo-demo-repo"
 
   # Path to the directory within the monorepo where the service code is located
   working_directory = "services/payment_service"

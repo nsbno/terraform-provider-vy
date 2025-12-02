@@ -14,6 +14,8 @@ Get information about a specific ECS image version. Images are uploaded to ECR d
 ```terraform
 data "vy_ecs_image" "this" {
   github_repository_name = "infrademo-demo-app"
+
+  ecr_repository_name = "infrademo-demo-repo"
 }
 
 # Use the version in an ECS task definition
@@ -27,33 +29,12 @@ module "task" {
 }
 ```
 
-## Override ECR Repository
-Normally, the data source retrieve ECR images from the CI process where an image is packaged to ECR.
-This example shows how to override the default ECR repository used by the data source.
-
-```terraform
-data "vy_ecs_image" "this" {
-  github_repository_name = "infrademo-demo-app"
-
-  # To override the ECR repository name, specify it here
-  ecr_repository_name = "petstore-lambda"
-}
-
-module "lambda" {
-  source = "github.com/nsbno/terraform-aws-ecs-service?ref=x.y.z"
-
-  application_container = {
-    name  = "user-service"
-    image = data.vy_ecs_image.this
-  }
-}
-```
-
 ## Monorepo Usage
 
 ```terraform
 data "vy_ecs_image" "user_service" {
   github_repository_name = "infrademo-demo-app"
+  ecr_repository_name    = "infrademo-demo-repo"
 
   # Path to the directory within the monorepo where the service code is located
   working_directory = "services/user_service"
@@ -70,6 +51,7 @@ module "user_service_ecs" {
 
 data "vy_ecs_image" "payment_service" {
   github_repository_name = "infrademo-demo-app"
+  ecr_repository_name    = "infrademo-demo-repo"
 
   # Path to the directory within the monorepo where the service code is located
   working_directory = "services/payment_service"
@@ -90,11 +72,11 @@ module "payment_service_ecs" {
 
 ### Required
 
-- `ecr_repository_name` (String) The ECR repository name where the ECS image is stored.
 - `github_repository_name` (String) The GitHub repository name for the ECS service.
 
 ### Optional
 
+- `ecr_repository_name` (String) The ECR repository name where the ECS image is stored. If not provided, will be retrieved from the API.
 - `working_directory` (String) The directory in the GitHub repository where the code is stored.
 
 ### Read-Only

@@ -1,5 +1,7 @@
 data "vy_ecs_image" "this" {
   github_repository_name = "infrademo-demo-app"
+
+  ecr_repository_name = "infrademo-demo-repo"
 }
 
 # Use the version in an ECS task definition
