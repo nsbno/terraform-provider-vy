@@ -2,10 +2,11 @@ package version_handler_v2
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/nsbno/terraform-provider-vy/internal/aws_auth"
 )
@@ -21,25 +22,28 @@ type ECSVersion struct {
 	ECRRepositoryURI     string `json:"ecr_repository_uri"`
 }
 
-func (c Client) ReadECSImage(githubRepositoryName string, workingDirectory string, ecsVersion *ECSVersion) error {
-	var url string
+func (c Client) ReadECSImage(githubRepositoryName string, ecrRepositoryName string, workingDirectory string,
+	ecsVersion *ECSVersion) error {
+
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
+	reqURL := fmt.Sprintf("%s%s/v2/versions/%s/ecs?ecr_repository_name=%s", protocol, c.BaseUrl,
+		githubRepositoryName, url.QueryEscape(ecrRepositoryName))
+
+	var q string
 	if workingDirectory != "" {
-		url = fmt.Sprintf("https://%s/v2/versions/%s/ecs/%s", c.BaseUrl, githubRepositoryName, workingDirectory)
-		// If HTTPClient is set (for testing), construct URL without https:// prefix
-		if c.HTTPClient != nil {
-			url = fmt.Sprintf("http://%s/v2/versions/%s/ecs/%s", c.BaseUrl, githubRepositoryName, workingDirectory)
-		}
-	} else {
-		url = fmt.Sprintf("https://%s/v2/versions/%s/ecs", c.BaseUrl, githubRepositoryName)
-		// If HTTPClient is set (for testing), construct URL without https:// prefix
-		if c.HTTPClient != nil {
-			url = fmt.Sprintf("http://%s/v2/versions/%s/ecs", c.BaseUrl, githubRepositoryName)
-		}
+		q = "working_directory=" + url.QueryEscape(workingDirectory)
+	}
+	if len(q) > 0 {
+		reqURL = reqURL + "&" + q
 	}
 
 	request, err := http.NewRequest(
 		http.MethodGet,
-		url,
+		reqURL,
 		nil,
 	)
 	if err != nil {
@@ -64,7 +68,20 @@ func (c Client) ReadECSImage(githubRepositoryName string, workingDirectory strin
 	if response.StatusCode != 200 {
 		str, _ := io.ReadAll(response.Body)
 
-		return errors.New(fmt.Sprintf("could not find ECS Image. %s", str))
+		var apiErr apiErrorPayload
+		if err := json.Unmarshal(str, &apiErr); err == nil && (apiErr.Message != "" || apiErr.ErrorType != "") {
+			return fmt.Errorf(
+				"%d: %s",
+				response.StatusCode,
+				apiErr.Message,
+			)
+		}
+
+		return fmt.Errorf(
+			"%d: %s",
+			response.StatusCode,
+			strings.TrimSpace(string(str)),
+		)
 	}
 
 	err = json.NewDecoder(response.Body).Decode(ecsVersion)

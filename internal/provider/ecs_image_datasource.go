@@ -45,11 +45,16 @@ func (e ECSImageDataSource) Schema(ctx context.Context, request datasource.Schem
 				Computed: true,
 			},
 			"github_repository_name": schema.StringAttribute{
-				MarkdownDescription: "The GitHub repository name to find the image for.",
+				MarkdownDescription: "The GitHub repository name for the ECS service.",
 				Required:            true,
 			},
+			"ecr_repository_name": schema.StringAttribute{
+				MarkdownDescription: "The ECR repository name where the ECS image is stored. If not provided, will be retrieved from the API.",
+				Optional:            true,
+				Computed:            true,
+			},
 			"working_directory": schema.StringAttribute{
-				MarkdownDescription: "The directory in the GitHub repository to find the image for.",
+				MarkdownDescription: "The directory in the GitHub repository where the code is stored.",
 				Optional:            true,
 			},
 			"git_sha": schema.StringAttribute{
@@ -67,11 +72,6 @@ func (e ECSImageDataSource) Schema(ctx context.Context, request datasource.Schem
 			"region": schema.StringAttribute{
 				MarkdownDescription: "The AWS region where the image is stored.",
 				Computed:            true,
-			},
-			"ecr_repository_name": schema.StringAttribute{
-				MarkdownDescription: "The ECR repository name where the image is stored. " +
-					"Used to override the name set automatically during CI.",
-				Optional: true,
 			},
 			"ecr_repository_uri": schema.StringAttribute{
 				MarkdownDescription: "The ECR repository URI where the image is stored.",
@@ -110,17 +110,17 @@ func (e ECSImageDataSource) Read(ctx context.Context, request datasource.ReadReq
 	}
 
 	var version version_handler_v2.ECSVersion
-	err := e.client.ReadECSImage(state.GitHubRepositoryName.ValueString(), state.WorkingDirectory.ValueString(), &version)
+	err := e.client.ReadECSImage(
+		state.GitHubRepositoryName.ValueString(),
+		state.ECRRepositoryName.ValueString(),
+		state.WorkingDirectory.ValueString(),
+		&version,
+	)
+
 	if err != nil {
-		errorMessage := fmt.Sprintf("Could not find ECS image for repository %s. %s",
-			state.GitHubRepositoryName.String(), err.Error())
-		if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
-			errorMessage = fmt.Sprintf("Could not find ECS image for repository %s/%s. %s",
-				state.GitHubRepositoryName.String(), workingDir, err.Error())
-		}
 		response.Diagnostics.AddError(
-			"Unable to find the ECS Image",
-			errorMessage,
+			"Unable to read the ECS Image",
+			err.Error(),
 		)
 	}
 

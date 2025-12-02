@@ -40,6 +40,7 @@ func TestLambdaArtifact_Basic(t *testing.T) {
 			"branch":                 "main",
 			"service_account_id":     "123456789012",
 			"region":                 "eu-west-1",
+			"bucket_name":            "my-lambda-artifacts-bucket",
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -64,6 +65,7 @@ func TestLambdaArtifact_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(expectedResourceName, "branch", "main"),
 					resource.TestCheckResourceAttr(expectedResourceName, "service_account_id", "123456789012"),
 					resource.TestCheckResourceAttr(expectedResourceName, "region", "eu-west-1"),
+					resource.TestCheckResourceAttr(expectedResourceName, "bucket_name", "my-lambda-artifacts-bucket"),
 				),
 			},
 		},
@@ -87,20 +89,29 @@ data "vy_lambda_artifact" "this" {
 func TestLambdaArtifact_WithWorkingDirectory(t *testing.T) {
 	// Create a mock HTTP server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v2/versions/infrademo-demo-app/lambda/lambda-function" {
+		if r.URL.Path != "/v2/versions/infrademo-demo-app/lambda" {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(fmt.Sprintf("Lambda Artifact not found: %s", r.URL.Path)))
+			return
+		}
+
+		// Check for working_directory query parameter
+		workingDir := r.URL.Query().Get("working_directory")
+		if workingDir != "services/lambda-function" {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(fmt.Sprintf("Lambda Artifact not found: working_directory=%s", workingDir)))
 			return
 		}
 
 		// Return mock Lambda artifact data as JSON
 		mockResponse := map[string]string{
 			"github_repository_name": "infrademo-demo-app",
-			"working_directory":      "lambda-function",
+			"working_directory":      "services/lambda-function",
 			"git_sha":                "def456",
 			"branch":                 "main",
 			"service_account_id":     "123456789012",
 			"region":                 "eu-west-1",
+			"bucket_name":            "my-lambda-artifacts-bucket",
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -121,11 +132,12 @@ func TestLambdaArtifact_WithWorkingDirectory(t *testing.T) {
 				Config: testLambdaArtifactConfigWithWorkingDirectory(mockServerHost),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(expectedResourceName, "github_repository_name", "infrademo-demo-app"),
-					resource.TestCheckResourceAttr(expectedResourceName, "working_directory", "lambda-function"),
+					resource.TestCheckResourceAttr(expectedResourceName, "working_directory", "services/lambda-function"),
 					resource.TestCheckResourceAttr(expectedResourceName, "git_sha", "def456"),
 					resource.TestCheckResourceAttr(expectedResourceName, "branch", "main"),
 					resource.TestCheckResourceAttr(expectedResourceName, "service_account_id", "123456789012"),
 					resource.TestCheckResourceAttr(expectedResourceName, "region", "eu-west-1"),
+					resource.TestCheckResourceAttr(expectedResourceName, "bucket_name", "my-lambda-artifacts-bucket"),
 				),
 			},
 		},

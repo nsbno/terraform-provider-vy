@@ -90,12 +90,12 @@ module "payment_service_ecs" {
 
 ### Required
 
-- `github_repository_name` (String) The GitHub repository name to find the image for.
+- `ecr_repository_name` (String) The ECR repository name where the ECS image is stored.
+- `github_repository_name` (String) The GitHub repository name for the ECS service.
 
 ### Optional
 
-- `ecr_repository_name` (String) The ECR repository name where the image is stored. Used to override the name set automatically during CI.
-- `working_directory` (String) The directory in the GitHub repository to find the image for.
+- `working_directory` (String) The directory in the GitHub repository where the code is stored.
 
 ### Read-Only
 

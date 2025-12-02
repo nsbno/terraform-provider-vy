@@ -92,9 +92,17 @@ data "vy_ecs_image" "this" {
 func TestECSImage_WithWorkingDirectory(t *testing.T) {
 	// Create a mock HTTP server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v2/versions/my-repo/ecs/services/user-auth" {
+		if r.URL.Path != "/v2/versions/my-repo/ecs" {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(fmt.Sprintf("ECS image not found: %s", r.URL.Path)))
+			return
+		}
+
+		// Check for working_directory query parameter
+		workingDir := r.URL.Query().Get("working_directory")
+		if workingDir != "services/user-auth" {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(fmt.Sprintf("ECS image not found: working_directory=%s", workingDir)))
 			return
 		}
 

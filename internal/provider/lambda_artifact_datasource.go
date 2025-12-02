@@ -39,6 +39,11 @@ func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource
 				MarkdownDescription: "The directory in the GitHub repository to find the artifact for.",
 				Optional:            true,
 			},
+			"ecr_repository_name": schema.StringAttribute{
+				MarkdownDescription: "*Only if artifact type is ECR.* " +
+					"The ECR repository name where the Lambda image is stored.",
+				Optional: true,
+			},
 			"git_sha": schema.StringAttribute{
 				MarkdownDescription: "The Git SHA of the commit that was used to build the artifact.",
 				Computed:            true,
@@ -51,14 +56,12 @@ func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource
 				MarkdownDescription: "The service account ID that was used to build the artifact.",
 				Computed:            true,
 			},
-			"ecr_repository_name": schema.StringAttribute{
-				MarkdownDescription: "*Only if artifact type is ECR.* " +
-					"The ECR repository name where the Lambda image is stored. " +
-					"Used to override the name set automatically during CI.",
-				Optional: true,
-			},
 			"region": schema.StringAttribute{
 				MarkdownDescription: "The AWS region where the artifact is stored.",
+				Computed:            true,
+			},
+			"bucket_name": schema.StringAttribute{
+				MarkdownDescription: "*Only if artifact type is S3.* The S3 bucket name where the Lambda artifact is stored.",
 				Computed:            true,
 			},
 		},
@@ -95,6 +98,7 @@ type LambdaArtifactDataSourceModel struct {
 	ServiceAccountID     types.String `tfsdk:"service_account_id"`
 	ECRRepositoryName    types.String `tfsdk:"ecr_repository_name"`
 	Region               types.String `tfsdk:"region"`
+	BucketName           types.String `tfsdk:"bucket_name"`
 }
 
 func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
@@ -106,17 +110,17 @@ func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.R
 	}
 
 	var version version_handler_v2.LambdaArtifact
-	err := s.client.ReadLambdaArtifact(state.GitHubRepositoryName.ValueString(), state.WorkingDirectory.ValueString(), &version)
+	err := s.client.ReadLambdaArtifact(
+		state.GitHubRepositoryName.ValueString(),
+		state.ECRRepositoryName.ValueString(),
+		state.WorkingDirectory.ValueString(),
+		&version,
+	)
+
 	if err != nil {
-		errorMessage := fmt.Sprintf("Could not find Lambda artifact for repository %s. %s",
-			state.GitHubRepositoryName.String(), err.Error())
-		if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
-			errorMessage = fmt.Sprintf("Could not find Lambda artifact for repository %s/%s. %s",
-				state.GitHubRepositoryName.String(), workingDir, err.Error())
-		}
 		response.Diagnostics.AddError(
 			"Unable to read Lambda artifact version",
-			errorMessage,
+			err.Error(),
 		)
 	}
 
@@ -131,6 +135,7 @@ func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.R
 	state.ServiceAccountID = types.StringValue(version.ServiceAccountID)
 	state.Region = types.StringValue(version.Region)
 	state.ECRRepositoryName = types.StringValue(version.ECRRepositoryName)
+	state.BucketName = types.StringValue(version.BucketName)
 
 	response.Diagnostics.Append(response.State.Set(ctx, &state)...)
 }

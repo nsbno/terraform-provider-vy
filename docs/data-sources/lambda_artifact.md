@@ -86,7 +86,7 @@ module "payment_lambda" {
 
 ### Optional
 
-- `ecr_repository_name` (String) *Only if artifact type is ECR.* The ECR repository name where the Lambda image is stored. Used to override the name set automatically during CI.
+- `ecr_repository_name` (String) *Only if artifact type is ECR.* The ECR repository name where the Lambda image is stored.
 - `working_directory` (String) The directory in the GitHub repository to find the artifact for.
 
 ### Read-Only
