@@ -42,6 +42,7 @@ func TestLambdaArtifact_Basic(t *testing.T) {
 			"region":                 "eu-west-1",
 			"s3_object_path":         "123456789012/lambda-artifacts/infrademo-demo-app/abc123/lambda.zip",
 			"s3_object_version":      "abc123",
+			"bucket_name":            "123456789012-deployment-delivery-artifacts",
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -68,6 +69,7 @@ func TestLambdaArtifact_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(expectedResourceName, "region", "eu-west-1"),
 					resource.TestCheckResourceAttr(expectedResourceName, "s3_object_path", "123456789012/lambda-artifacts/infrademo-demo-app/abc123/lambda.zip"),
 					resource.TestCheckResourceAttr(expectedResourceName, "s3_object_version", "abc123"),
+					resource.TestCheckResourceAttr(expectedResourceName, "s3_bucket_name", "123456789012-deployment-delivery-artifacts"),
 				),
 			},
 		},
@@ -115,6 +117,7 @@ func TestLambdaArtifact_WithWorkingDirectory(t *testing.T) {
 			"region":                 "eu-west-1",
 			"s3_object_path":         "123456789012/lambda-artifacts/infrademo-demo-app/abc123/lambda.zip",
 			"s3_object_version":      "abc123",
+			"bucket_name":            "123456789012-deployment-delivery-artifacts",
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -142,6 +145,7 @@ func TestLambdaArtifact_WithWorkingDirectory(t *testing.T) {
 					resource.TestCheckResourceAttr(expectedResourceName, "region", "eu-west-1"),
 					resource.TestCheckResourceAttr(expectedResourceName, "s3_object_path", "123456789012/lambda-artifacts/infrademo-demo-app/abc123/lambda.zip"),
 					resource.TestCheckResourceAttr(expectedResourceName, "s3_object_version", "abc123"),
+					resource.TestCheckResourceAttr(expectedResourceName, "s3_bucket_name", "123456789012-deployment-delivery-artifacts"),
 				),
 			},
 		},

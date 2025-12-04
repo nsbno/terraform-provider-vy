@@ -76,6 +76,11 @@ func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource
 					"The S3 object version of the Lambda artifact stored.",
 				Computed: true,
 			},
+			"s3_bucket_name": schema.StringAttribute{
+				MarkdownDescription: "*Only if artifact type is S3.* " +
+					"The S3 bucket where the Lambda artifact is stored.",
+				Computed: true,
+			},
 		},
 	}
 
@@ -113,6 +118,7 @@ type LambdaArtifactDataSourceModel struct {
 	Region               types.String `tfsdk:"region"`
 	S3ObjectPath         types.String `tfsdk:"s3_object_path"`
 	S3ObjectVersion      types.String `tfsdk:"s3_object_version"`
+	S3BucketName         types.String `tfsdk:"s3_bucket_name"`
 }
 
 func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
@@ -152,6 +158,7 @@ func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.R
 	state.ECRRepositoryURI = types.StringValue(version.ECRRepositoryURI)
 	state.S3ObjectPath = types.StringValue(version.S3ObjectPath)
 	state.S3ObjectVersion = types.StringValue(version.S3ObjectVersion)
+	state.S3BucketName = types.StringValue(version.S3BucketName)
 
 	response.Diagnostics.Append(response.State.Set(ctx, &state)...)
 }
