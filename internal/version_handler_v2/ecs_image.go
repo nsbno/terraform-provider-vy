@@ -35,7 +35,10 @@ func (c Client) ReadECSImage(githubRepositoryName string, ecrRepositoryName stri
 
 	var q string
 	if workingDirectory != "" {
-		q = "working_directory=" + url.QueryEscape(workingDirectory)
+		// Remove leading ./ and / from working directory
+		normalizedWorkingDir := strings.TrimPrefix(workingDirectory, "./")
+		normalizedWorkingDir = strings.TrimPrefix(normalizedWorkingDir, "/")
+		q = "working_directory=" + url.QueryEscape(normalizedWorkingDir)
 	}
 	if len(q) > 0 {
 		reqURL = reqURL + "&" + q

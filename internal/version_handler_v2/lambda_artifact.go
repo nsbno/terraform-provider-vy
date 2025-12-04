@@ -38,7 +38,10 @@ func (c Client) ReadLambdaArtifact(githubRepositoryName string, ecrRepositoryNam
 		q = append(q, "ecr_repository_name="+url.QueryEscape(ecrRepositoryName))
 	}
 	if workingDirectory != "" {
-		q = append(q, "working_directory="+url.QueryEscape(workingDirectory))
+		// Remove leading ./ and / from working directory
+		normalizedWorkingDir := strings.TrimPrefix(workingDirectory, "./")
+		normalizedWorkingDir = strings.TrimPrefix(normalizedWorkingDir, "/")
+		q = append(q, "working_directory="+url.QueryEscape(normalizedWorkingDir))
 	}
 	if len(q) > 0 {
 		reqURL = reqURL + "?" + strings.Join(q, "&")
