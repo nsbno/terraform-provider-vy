@@ -29,7 +29,8 @@ func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				MarkdownDescription: "The ID of this resource. Format: [github_repository_name]/[working_directory]",
+				Computed:            true,
 			},
 			"github_repository_name": schema.StringAttribute{
 				MarkdownDescription: "The GitHub repository name to find the artifact for.",
@@ -43,6 +44,11 @@ func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource
 				MarkdownDescription: "*Only if artifact type is ECR.* " +
 					"The ECR repository name where the Lambda image is stored.",
 				Optional: true,
+			},
+			"ecr_repository_uri": schema.StringAttribute{
+				MarkdownDescription: "*Only if artifact type is ECR.* " +
+					"The computed ECR repository URI where the Lambda image is stored.",
+				Computed: true,
 			},
 			"git_sha": schema.StringAttribute{
 				MarkdownDescription: "The Git SHA of the commit that was used to build the artifact.",
@@ -60,9 +66,15 @@ func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource
 				MarkdownDescription: "The AWS region where the artifact is stored.",
 				Computed:            true,
 			},
-			"bucket_name": schema.StringAttribute{
-				MarkdownDescription: "*Only if artifact type is S3.* The S3 bucket name where the Lambda artifact is stored.",
-				Computed:            true,
+			"s3_object_path": schema.StringAttribute{
+				MarkdownDescription: "*Only if artifact type is S3.* " +
+					"The S3 bucket path where the Lambda artifact is stored.",
+				Computed: true,
+			},
+			"s3_object_version": schema.StringAttribute{
+				MarkdownDescription: "*Only if artifact type is S3.* " +
+					"The S3 object version of the Lambda artifact stored.",
+				Computed: true,
 			},
 		},
 	}
@@ -97,8 +109,10 @@ type LambdaArtifactDataSourceModel struct {
 	Branch               types.String `tfsdk:"branch"`
 	ServiceAccountID     types.String `tfsdk:"service_account_id"`
 	ECRRepositoryName    types.String `tfsdk:"ecr_repository_name"`
+	ECRRepositoryURI     types.String `tfsdk:"ecr_repository_uri"`
 	Region               types.String `tfsdk:"region"`
-	BucketName           types.String `tfsdk:"bucket_name"`
+	S3ObjectPath         types.String `tfsdk:"s3_object_path"`
+	S3ObjectVersion      types.String `tfsdk:"s3_object_version"`
 }
 
 func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
@@ -135,7 +149,9 @@ func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.R
 	state.ServiceAccountID = types.StringValue(version.ServiceAccountID)
 	state.Region = types.StringValue(version.Region)
 	state.ECRRepositoryName = types.StringValue(version.ECRRepositoryName)
-	state.BucketName = types.StringValue(version.BucketName)
+	state.ECRRepositoryURI = types.StringValue(version.ECRRepositoryURI)
+	state.S3ObjectPath = types.StringValue(version.S3ObjectPath)
+	state.S3ObjectVersion = types.StringValue(version.S3ObjectVersion)
 
 	response.Diagnostics.Append(response.State.Set(ctx, &state)...)
 }

@@ -18,8 +18,10 @@ type LambdaArtifact struct {
 	Branch               string `json:"branch"`
 	ServiceAccountID     string `json:"service_account_id"`
 	ECRRepositoryName    string `json:"ecr_repository_name"`
+	ECRRepositoryURI     string `json:"ecr_repository_uri"`
 	Region               string `json:"region"`
-	BucketName           string `json:"bucket_name"`
+	S3ObjectPath         string `json:"s3_object_path"`
+	S3ObjectVersion      string `json:"s3_object_version"`
 }
 
 func (c Client) ReadLambdaArtifact(githubRepositoryName string, ecrRepositoryName string, workingDirectory string,

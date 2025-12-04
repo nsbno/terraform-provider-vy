@@ -10,6 +10,7 @@ description: |-
 Get information about a specific Lambda artifact version. Artifacts are uploaded to S3 or ECR during the CI process.
 
 ## Using S3 Artifact
+S3 Bucket and Object will be validated to ensure they exist in your AWS service account id.
 
 ```terraform
 # Get information about an S3 artifact based on GitHub repository name
@@ -28,6 +29,7 @@ module "lambda" {
 ```
 
 ## Using ECR Images
+ECR Repository will be validated to ensure it exists in your AWS service account id.
 
 ```terraform
 # Get information about an ECR Image based on GitHub repository name
@@ -93,8 +95,10 @@ module "payment_lambda" {
 ### Read-Only
 
 - `branch` (String) The Git branch of the commit that was used to build the artifact.
-- `bucket_name` (String) *Only if artifact type is S3.* The S3 bucket name where the Lambda artifact is stored.
+- `ecr_repository_uri` (String) *Only if artifact type is ECR.* The computed ECR repository URI where the Lambda image is stored.
 - `git_sha` (String) The Git SHA of the commit that was used to build the artifact.
-- `id` (String) The ID of this resource.
+- `id` (String) The ID of this resource. Format: [github_repository_name]/[working_directory]
 - `region` (String) The AWS region where the artifact is stored.
+- `s3_object_path` (String) *Only if artifact type is S3.* The S3 bucket path where the Lambda artifact is stored.
+- `s3_object_version` (String) *Only if artifact type is S3.* The S3 object version of the Lambda artifact stored.
 - `service_account_id` (String) The service account ID that was used to build the artifact.

@@ -10,10 +10,12 @@ description: |-
 {{ .Description | trimspace }}
 
 ## Using S3 Artifact
+S3 Bucket and Object will be validated to ensure they exist in your AWS service account id.
 
 {{ tffile (printf "examples/data-sources/%s/s3.tf" .Name)}}
 
 ## Using ECR Images
+ECR Repository will be validated to ensure it exists in your AWS service account id.
 
 {{ tffile (printf "examples/data-sources/%s/ecr.tf" .Name)}}
 
