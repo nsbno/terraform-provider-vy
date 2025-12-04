@@ -42,16 +42,16 @@ func (e ECSImageDataSource) Schema(ctx context.Context, request datasource.Schem
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				MarkdownDescription: "The ID of this resource. Format: [github_repository_name]/[working_directory]",
+				Computed:            true,
 			},
 			"github_repository_name": schema.StringAttribute{
 				MarkdownDescription: "The GitHub repository name for the ECS service.",
 				Required:            true,
 			},
 			"ecr_repository_name": schema.StringAttribute{
-				MarkdownDescription: "The ECR repository name where the ECS image is stored. If not provided, will be retrieved from the API.",
-				Optional:            true,
-				Computed:            true,
+				MarkdownDescription: "The ECR repository name where the image to the ECS service is stored.",
+				Required:            true,
 			},
 			"working_directory": schema.StringAttribute{
 				MarkdownDescription: "The directory in the GitHub repository where the code is stored.",

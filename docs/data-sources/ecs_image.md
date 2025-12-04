@@ -72,11 +72,11 @@ module "payment_service_ecs" {
 
 ### Required
 
+- `ecr_repository_name` (String) The ECR repository name where the image to the ECS service is stored.
 - `github_repository_name` (String) The GitHub repository name for the ECS service.
 
 ### Optional
 
-- `ecr_repository_name` (String) The ECR repository name where the ECS image is stored. If not provided, will be retrieved from the API.
 - `working_directory` (String) The directory in the GitHub repository where the code is stored.
 
 ### Read-Only
@@ -84,6 +84,6 @@ module "payment_service_ecs" {
 - `branch` (String) The Git branch of the commit that was used to build the image.
 - `ecr_repository_uri` (String) The ECR repository URI where the image is stored.
 - `git_sha` (String) The Git SHA of the commit that was used to build the image.
-- `id` (String) The ID of this resource.
+- `id` (String) The ID of this resource. Format: [github_repository_name]/[working_directory]
 - `region` (String) The AWS region where the image is stored.
 - `service_account_id` (String) The service account ID that was used to build the image.
