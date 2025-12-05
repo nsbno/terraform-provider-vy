@@ -99,6 +99,7 @@ module "payment_lambda" {
 - `git_sha` (String) The Git SHA of the commit that was used to build the artifact.
 - `id` (String) The ID of this resource. Format: [github_repository_name]/[working_directory]
 - `region` (String) The AWS region where the artifact is stored.
+- `s3_bucket_name` (String) *Only if artifact type is S3.* The S3 bucket where the Lambda artifact is stored.
 - `s3_object_path` (String) *Only if artifact type is S3.* The S3 bucket path where the Lambda artifact is stored.
 - `s3_object_version` (String) *Only if artifact type is S3.* The S3 object version of the Lambda artifact stored.
 - `service_account_id` (String) The service account ID that was used to build the artifact.
