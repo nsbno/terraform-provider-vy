@@ -1,0 +1,155 @@
+package provider
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+func testFrontendArtifactConfig(mockServerHost string) string {
+	return fmt.Sprintf(`
+provider "vy" {
+	environment = "test"
+	version_handler_v2_base_url = "%s"
+}
+
+data "vy_frontend_artifact" "this" {
+	github_repository_name = "infrademo-static-website"
+}
+`, mockServerHost)
+}
+
+func TestFrontendArtifact_Basic(t *testing.T) {
+	// Create a mock HTTP server
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v2/versions/infrademo-static-website/lambda" {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(fmt.Sprintf("Frontend Artifact not found: %s", r.URL.Path)))
+			return
+		}
+
+		// Return mock frontend artifact data as JSON
+		mockResponse := map[string]string{
+			"github_repository_name": "infrademo-static-website",
+			"working_directory":      "",
+			"git_sha":                "abc123",
+			"branch":                 "main",
+			"service_account_id":     "123456789012",
+			"region":                 "eu-west-1",
+			"s3_object_path":         "123456789012/static-websites/infrademo-static-website/abc123/website.zip",
+			"s3_object_version":      "xyz789",
+			"bucket_name":            "123456789012-deployment-delivery-artifacts",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(mockResponse)
+	}))
+	defer mockServer.Close()
+
+	// Extract host from URL (strip http://)
+	mockServerHost := mockServer.URL[7:] // Remove "http://" prefix
+
+	expectedResourceName := "data.vy_frontend_artifact.this"
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testFrontendArtifactConfig(mockServerHost),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(expectedResourceName, "github_repository_name", "infrademo-static-website"),
+					resource.TestCheckResourceAttr(expectedResourceName, "git_sha", "abc123"),
+					resource.TestCheckResourceAttr(expectedResourceName, "branch", "main"),
+					resource.TestCheckResourceAttr(expectedResourceName, "service_account_id", "123456789012"),
+					resource.TestCheckResourceAttr(expectedResourceName, "region", "eu-west-1"),
+					resource.TestCheckResourceAttr(expectedResourceName, "s3_object_path", "123456789012/static-websites/infrademo-static-website/abc123/website.zip"),
+					resource.TestCheckResourceAttr(expectedResourceName, "s3_object_version", "xyz789"),
+					resource.TestCheckResourceAttr(expectedResourceName, "s3_bucket_name", "123456789012-deployment-delivery-artifacts"),
+					resource.TestCheckResourceAttr(expectedResourceName, "s3_source_path", "123456789012-deployment-delivery-artifacts/123456789012/static-websites/infrademo-static-website/abc123/website.zip"),
+				),
+			},
+		},
+	})
+}
+
+func testFrontendArtifactConfigWithWorkingDirectory(mockServerHost string) string {
+	return fmt.Sprintf(`
+provider "vy" {
+	environment = "test"
+	version_handler_v2_base_url = "%s"
+}
+
+data "vy_frontend_artifact" "this" {
+	github_repository_name = "infrademo-static-website"
+	working_directory = "frontend/dist"
+}
+`, mockServerHost)
+}
+
+func TestFrontendArtifact_WithWorkingDirectory(t *testing.T) {
+	// Create a mock HTTP server
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v2/versions/infrademo-static-website/lambda" {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(fmt.Sprintf("Frontend Artifact not found: %s", r.URL.Path)))
+			return
+		}
+
+		// Check for working_directory query parameter
+		workingDir := r.URL.Query().Get("working_directory")
+		if workingDir != "frontend/dist" {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(fmt.Sprintf("Frontend Artifact not found: working_directory=%s", workingDir)))
+			return
+		}
+
+		// Return mock frontend artifact data as JSON
+		mockResponse := map[string]string{
+			"github_repository_name": "infrademo-static-website",
+			"working_directory":      "frontend/dist",
+			"git_sha":                "def456",
+			"branch":                 "main",
+			"service_account_id":     "123456789012",
+			"region":                 "eu-west-1",
+			"s3_object_path":         "123456789012/static-websites/infrademo-static-website/def456/website.zip",
+			"s3_object_version":      "xyz789",
+			"bucket_name":            "123456789012-deployment-delivery-artifacts",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(mockResponse)
+	}))
+	defer mockServer.Close()
+
+	// Extract host from URL (strip http://)
+	mockServerHost := mockServer.URL[7:] // Remove "http://" prefix
+
+	expectedResourceName := "data.vy_frontend_artifact.this"
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testFrontendArtifactConfigWithWorkingDirectory(mockServerHost),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(expectedResourceName, "github_repository_name", "infrademo-static-website"),
+					resource.TestCheckResourceAttr(expectedResourceName, "working_directory", "frontend/dist"),
+					resource.TestCheckResourceAttr(expectedResourceName, "git_sha", "def456"),
+					resource.TestCheckResourceAttr(expectedResourceName, "branch", "main"),
+					resource.TestCheckResourceAttr(expectedResourceName, "service_account_id", "123456789012"),
+					resource.TestCheckResourceAttr(expectedResourceName, "region", "eu-west-1"),
+					resource.TestCheckResourceAttr(expectedResourceName, "s3_object_path", "123456789012/static-websites/infrademo-static-website/def456/website.zip"),
+					resource.TestCheckResourceAttr(expectedResourceName, "s3_object_version", "xyz789"),
+					resource.TestCheckResourceAttr(expectedResourceName, "s3_bucket_name", "123456789012-deployment-delivery-artifacts"),
+					resource.TestCheckResourceAttr(expectedResourceName, "s3_source_path", "123456789012-deployment-delivery-artifacts/123456789012/static-websites/infrademo-static-website/def456/website.zip"),
+				),
+			},
+		},
+	})
+}

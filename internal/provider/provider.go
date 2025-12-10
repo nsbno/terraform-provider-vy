@@ -173,6 +173,7 @@ func (p VyProvider) DataSources(ctx context.Context) []func() datasource.DataSou
 		NewArtifactVersionDataSource,
 		NewECSImageDataSource,
 		NewLambdaArtifactDataSource,
+		NewFrontendArtifactDataSource,
 	}
 }
 
