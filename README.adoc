@@ -190,3 +190,26 @@ TF_ACC=1 go test ./... -v $
 ----
 
 The GitHub AWS Account variables are set to `infrademo-test` variables.
+
+=== How to test the provider locally
+- Build the provider:
+----
+go build
+----
+
+- Find the local path to the built provider binary, and copy the output of:
+----
+pwd
+----
+
+- Create `~/.terraformrc`, and add:
+----
+provider_installation {
+  dev_overrides {
+    "nsbno/vy" = "/path/to/terraform-provider-vy"
+  }
+
+  # For all other providers, use the default registry
+  direct {}
+}
+----
