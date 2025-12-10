@@ -9,9 +9,25 @@ description: |-
 
 {{ .Description | trimspace }}
 
-## Example Usage
+## Backend App Client Usage
+When setting the type to `backend` for machine to machine (M2M) authentication,
+you set up OAuth 2.0 grant type: `client credentials`.
 
-{{ tffile (printf "examples/resources/%s/resource.tf" .Name)}}
+> Client Credentials specifies that the client should get the access token from the token endpoint using a combination of client and client_secret.
+
+{{ tffile (printf "examples/resources/%s/backend.tf" .Name)}}
+
+## Frontend App Client Usage
+If you want to user authenticate with the shared Cognito user pool, you define an app client of type `frontend`.
+This will set up a OAuth 2.0 grant type of: `authorization code grant` or `implicit grant`.
+
+> Authorization Code Grant: provides an authorization code as the response. This is more secure than the implicit grant.
+
+>Implicit Grant: specifies that the client should get the access token (and, optionally, ID token, based on scopes) directly. Usually used for Single-Page Applications (SPA) or mobile apps.
+
+To whitelist urls for OAuth2 Authorization Code Flow, you can use `callback_urls` and `logout_urls` parameters.
+
+{{ tffile (printf "examples/resources/%s/frontend.tf" .Name)}}
 
 {{ .SchemaMarkdown | trimspace }}
 

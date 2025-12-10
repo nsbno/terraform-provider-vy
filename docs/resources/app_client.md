@@ -9,30 +9,54 @@ description: |-
 
 App clients are the user pool authentication resources attached to your app. Use an app client to configure the permitted authentication actions towards a resource server.
 
-## Example Usage
+## Backend App Client Usage
+When setting the type to `backend` for machine to machine (M2M) authentication,
+you set up OAuth 2.0 grant type: `client credentials`.
+
+> Client Credentials specifies that the client should get the access token from the token endpoint using a combination of client and client_secret.
 
 ```terraform
 resource "vy_app_client" "backend_application" {
-  name = "app_client_basic.acceptancetest.io"
+  name = "infrademo-backend.vydev.io"
   type = "backend"
 
   scopes = [
-    "my.cool.service.vydev.io/read",
-    "my.cool.service.vydev.io/delete",
+	"https://infrademo.vydev.io/demo/read"  # Refers to the resource server defined above
   ]
 }
+```
 
-resource "vy_app_client" "frontend_application" {
-  name = "app_client_basic.acceptancetest.io"
+## Frontend App Client Usage
+If you want to user authenticate with the shared Cognito user pool, you define an app client of type `frontend`.
+This will set up a OAuth 2.0 grant type of: `authorization code grant` or `implicit grant`.
+
+> Authorization Code Grant: provides an authorization code as the response. This is more secure than the implicit grant.
+
+>Implicit Grant: specifies that the client should get the access token (and, optionally, ID token, based on scopes) directly. Usually used for Single-Page Applications (SPA) or mobile apps.
+
+To whitelist urls for OAuth2 Authorization Code Flow, you can use `callback_urls` and `logout_urls` parameters.
+
+```terraform
+data "aws_caller_identity" "current" {}
+
+resource "vy_app_client" "client" {
+  name = "${data.aws_caller_identity.current.account_id}-infrademo"
   type = "frontend"
 
-  scopes = [
-    "my.cool.service.vydev.io/read",
-    "my.cool.service.vydev.io/write",
+  callback_urls   = [
+	"http://localhost:3000/auth/callback",
+	"https://petstore.infrademo.vydev.io/auth/callback",  # Example
+  ]
+  logout_urls = [
+	"http://localhost:3000/logout",
+	"https://petstore.infrademo.vydev.io/logout",  # Example
   ]
 
-  callback_urls = ["https://example.com/callback"]
-  logout_urls   = ["https://example.com/logout"]
+  scopes = [
+	"email",
+	"openid",
+	"profile",
+  ]
 }
 ```
 
