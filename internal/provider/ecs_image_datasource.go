@@ -125,7 +125,7 @@ func (e ECSImageDataSource) Read(ctx context.Context, request datasource.ReadReq
 	}
 
 	if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
-		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), workingDir))
+		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), version.WorkingDirectory))
 	} else {
 		state.Id = state.GitHubRepositoryName
 	}

@@ -136,7 +136,7 @@ func (s FrontendArtifactDataSource) Read(ctx context.Context, request datasource
 	}
 
 	if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
-		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), workingDir))
+		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), version.WorkingDirectory))
 	} else {
 		state.Id = state.GitHubRepositoryName
 	}

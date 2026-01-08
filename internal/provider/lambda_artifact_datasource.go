@@ -145,7 +145,7 @@ func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.R
 	}
 
 	if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
-		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), workingDir))
+		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), version.WorkingDirectory))
 	} else {
 		state.Id = state.GitHubRepositoryName
 	}
