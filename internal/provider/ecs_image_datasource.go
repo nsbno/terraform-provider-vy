@@ -42,8 +42,9 @@ func (e ECSImageDataSource) Schema(ctx context.Context, request datasource.Schem
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: "The ID of this resource. Format: [github_repository_name]/[ecr_repository_name]",
-				Computed:            true,
+				MarkdownDescription: "The ID of this resource. " +
+					"Format: [github_repository_name]/[working_directory]/[ecr_repository_name]",
+				Computed: true,
 			},
 			"github_repository_name": schema.StringAttribute{
 				MarkdownDescription: "The GitHub repository name for the ECS service.",
@@ -124,10 +125,21 @@ func (e ECSImageDataSource) Read(ctx context.Context, request datasource.ReadReq
 		)
 	}
 
-	if state.ECRRepositoryName.ValueString() != "" {
-		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), state.ECRRepositoryName.ValueString()))
+	if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
+		state.Id = types.StringValue(
+			fmt.Sprintf(
+				"%s/%s/%s",
+				state.GitHubRepositoryName.ValueString(),
+				version.WorkingDirectory,
+				state.ECRRepositoryName.ValueString()),
+		)
 	} else {
-		state.Id = state.GitHubRepositoryName
+		state.Id = types.StringValue(
+			fmt.Sprintf(
+				"%s/%s",
+				state.GitHubRepositoryName.ValueString(),
+				state.ECRRepositoryName.ValueString()),
+		)
 	}
 	state.WorkingDirectory = types.StringValue(version.WorkingDirectory)
 	state.GitSha = types.StringValue(version.GitSha)

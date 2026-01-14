@@ -84,6 +84,6 @@ module "payment_service_ecs" {
 - `branch` (String) The Git branch of the commit that was used to build the image.
 - `ecr_repository_uri` (String) The ECR repository URI where the image is stored.
 - `git_sha` (String) The Git SHA of the commit that was used to build the image.
-- `id` (String) The ID of this resource. Format: [github_repository_name]/[ecr_repository_name]
+- `id` (String) The ID of this resource. Format: [github_repository_name]/[working_directory]/[ecr_repository_name]
 - `region` (String) The AWS region where the image is stored.
 - `service_account_id` (String) The service account ID that was used to build the image.
