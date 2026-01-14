@@ -42,7 +42,7 @@ func (e ECSImageDataSource) Schema(ctx context.Context, request datasource.Schem
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: "The ID of this resource. Format: [github_repository_name]/[working_directory]",
+				MarkdownDescription: "The ID of this resource. Format: [github_repository_name]/[ecr_repository_name]",
 				Computed:            true,
 			},
 			"github_repository_name": schema.StringAttribute{
@@ -124,8 +124,8 @@ func (e ECSImageDataSource) Read(ctx context.Context, request datasource.ReadReq
 		)
 	}
 
-	if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
-		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), version.WorkingDirectory))
+	if state.ECRRepositoryName.ValueString() != "" {
+		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), state.ECRRepositoryName.ValueString()))
 	} else {
 		state.Id = state.GitHubRepositoryName
 	}
