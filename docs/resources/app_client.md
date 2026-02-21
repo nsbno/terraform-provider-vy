@@ -21,7 +21,7 @@ resource "vy_app_client" "backend_application" {
   type = "backend"
 
   scopes = [
-	"https://infrademo.vydev.io/demo/read"  # Refers to the resource server defined above
+    "https://infrademo.vydev.io/demo/read" # Refers to the resource server defined above
   ]
 }
 ```
@@ -43,19 +43,19 @@ resource "vy_app_client" "client" {
   name = "${data.aws_caller_identity.current.account_id}-infrademo"
   type = "frontend"
 
-  callback_urls   = [
-	"http://localhost:3000/auth/callback",
-	"https://petstore.infrademo.vydev.io/auth/callback",  # Example
+  callback_urls = [
+    "http://localhost:3000/auth/callback",
+    "https://petstore.infrademo.vydev.io/auth/callback", # Example
   ]
   logout_urls = [
-	"http://localhost:3000/logout",
-	"https://petstore.infrademo.vydev.io/logout",  # Example
+    "http://localhost:3000/logout",
+    "https://petstore.infrademo.vydev.io/logout", # Example
   ]
 
   scopes = [
-	"email",
-	"openid",
-	"profile",
+    "email",
+    "openid",
+    "profile",
   ]
 }
 ```

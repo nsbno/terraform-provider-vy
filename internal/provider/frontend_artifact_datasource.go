@@ -125,6 +125,7 @@ func (s FrontendArtifactDataSource) Read(ctx context.Context, request datasource
 		state.GitHubRepositoryName.ValueString(),
 		"", // No ECR repository name for frontend artifacts
 		state.WorkingDirectory.ValueString(),
+		"",
 		&version,
 	)
 

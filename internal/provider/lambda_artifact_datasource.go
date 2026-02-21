@@ -25,7 +25,8 @@ func (s LambdaArtifactDataSource) Metadata(ctx context.Context, request datasour
 func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
 	response.Schema = schema.Schema{
 		MarkdownDescription: "Get information about a specific Lambda artifact version. " +
-			"Artifacts are uploaded to S3 or ECR during the CI process.",
+			"Artifacts are uploaded to S3 or ECR during the CI process through reusable " +
+			"workflows in Github Actions. Ref [platform-actions](https://github.com/nsbno/platform-actions/blob/main/.github/workflows/deployment.all-environments-terraform.yml)",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -36,9 +37,18 @@ func (s LambdaArtifactDataSource) Schema(ctx context.Context, request datasource
 				MarkdownDescription: "The GitHub repository name to find the artifact for.",
 				Required:            true,
 			},
+			"path": schema.StringAttribute{
+				MarkdownDescription: "Directory to where the artifact is located, under `github_repository_name` and `working_directory`." +
+					"Only relevant for S3 artifacts." +
+					"Use `path` if you have multiple artifacts under the same `working_directory` or Terraform state",
+				Optional: true,
+			},
 			"working_directory": schema.StringAttribute{
-				MarkdownDescription: "The directory in the GitHub repository to find the artifact for.",
-				Optional:            true,
+				MarkdownDescription: "Directory in the GitHub repository to find the artifact." +
+					"`working_directory` is useful for monorepo systems, where you have multiple Terraform States." +
+					"When specified, we require that you also specify " +
+					"[`working-directory` for the Terraform deploy job in Github actions](https://github.com/nsbno/platform-actions/blob/main/.github/workflows/deployment.all-environments-terraform.yml#L15)",
+				Optional: true,
 			},
 			"ecr_repository_name": schema.StringAttribute{
 				MarkdownDescription: "*Only if artifact type is ECR.* " +
@@ -109,6 +119,7 @@ func (s *LambdaArtifactDataSource) Configure(ctx context.Context, request dataso
 type LambdaArtifactDataSourceModel struct {
 	Id                   types.String `tfsdk:"id"`
 	GitHubRepositoryName types.String `tfsdk:"github_repository_name"`
+	Path                 types.String `tfsdk:"path"`
 	WorkingDirectory     types.String `tfsdk:"working_directory"`
 	GitSha               types.String `tfsdk:"git_sha"`
 	Branch               types.String `tfsdk:"branch"`
@@ -134,6 +145,7 @@ func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.R
 		state.GitHubRepositoryName.ValueString(),
 		state.ECRRepositoryName.ValueString(),
 		state.WorkingDirectory.ValueString(),
+		state.Path.ValueString(),
 		&version,
 	)
 
@@ -144,12 +156,8 @@ func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.R
 		)
 	}
 
-	if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
-		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), version.WorkingDirectory))
-	} else {
-		state.Id = state.GitHubRepositoryName
-	}
 	state.WorkingDirectory = types.StringValue(version.WorkingDirectory)
+	state.Path = types.StringValue(version.Path)
 	state.GitSha = types.StringValue(version.GitSha)
 	state.Branch = types.StringValue(version.Branch)
 	state.ServiceAccountID = types.StringValue(version.ServiceAccountID)
@@ -160,5 +168,27 @@ func (s LambdaArtifactDataSource) Read(ctx context.Context, request datasource.R
 	state.S3ObjectVersion = types.StringValue(version.S3ObjectVersion)
 	state.S3BucketName = types.StringValue(version.S3BucketName)
 
+	state.Id = types.StringValue(stateIdFromState(&state))
+
 	response.Diagnostics.Append(response.State.Set(ctx, &state)...)
+}
+
+// stateIdFromState Constructs the unique identifier for a single state
+// based on what the incoming state is.
+func stateIdFromState(state *LambdaArtifactDataSourceModel) string {
+	var stateId string
+
+	if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
+		stateId = fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), workingDir)
+	} else {
+		stateId = state.GitHubRepositoryName.ValueString()
+	}
+
+	if path := state.Path.ValueString(); path != "" {
+		// If a path is included then append that at the end,
+		// as repo-name and working-dir takes priority
+		stateId = fmt.Sprintf("%s/%s", stateId, path)
+	}
+
+	return stateId
 }

@@ -2,29 +2,68 @@
 page_title: "Data Source vy_lambda_artifact - vy"
 subcategory: "Version Handler V2"
 description: |-
-  Get information about a specific Lambda artifact version. Artifacts are uploaded to S3 or ECR during the CI process.
+  Get information about a specific Lambda artifact version. Artifacts are uploaded to S3 or ECR during the CI process through reusable workflows in Github Actions. Ref platform-actions https://github.com/nsbno/platform-actions/blob/main/.github/workflows/deployment.all-environments-terraform.yml
 ---
 
 # Data Source: vy_lambda_artifact
 
-Get information about a specific Lambda artifact version. Artifacts are uploaded to S3 or ECR during the CI process.
+Get information about a specific Lambda artifact version. Artifacts are uploaded to S3 or ECR during the CI process through reusable workflows in Github Actions. Ref [platform-actions](https://github.com/nsbno/platform-actions/blob/main/.github/workflows/deployment.all-environments-terraform.yml)
 
 ## Using S3 Artifact
 S3 Bucket and Object will be validated to ensure they exist in your AWS service account id.
 
 ```terraform
 # Get information about an S3 artifact based on GitHub repository name
-data "vy_lambda_artifact" "this" {
+data "vy_lambda_artifact" "app_in_s3" {
   github_repository_name = "infrademo-demo-app"
 }
 
 # Use the S3 artifact in a Lambda module
-module "lambda" {
-  source = "github.com/nsbno/terraform-aws-lambda?ref=x.y.z"
+module "lambda_in_s3" {
+  source = "github.com/nsbno/terraform-aws-lambda?ref=1.0.0"
 
   service_name  = "my-function"
   artifact_type = "s3"
-  artifact      = data.vy_lambda_artifact.this
+  artifact      = data.vy_lambda_artifact.app_in_s3
+}
+```
+
+### Multiple Lambda Functions
+
+More often than not you have multiple Lambda Functions per service. 
+This is how you can reference the artifacts for each of them.
+
+```terraform
+data "vy_lambda_artifact" "lambda_1" {
+  github_repository_name = "infrademo-demo-app"
+  // The sub-path under infrademo-demo-app in the S3 artifact bucket
+  path = "apps/lambda-1"
+}
+
+data "vy_lambda_artifact" "lambda_2" {
+  github_repository_name = "infrademo-demo-app"
+  // Another sub-path under infrademo-demo-app
+  path = "apps/lambda-2"
+}
+
+module "lambda_function_1" {
+  source = "github.com/nsbno/terraform-aws-lambda?ref=1.0.0"
+
+  service_name   = "my-function"
+  component_name = "lambda-1"
+
+  artifact_type = "s3"
+  artifact      = data.vy_lambda_artifact.lambda_1
+}
+
+module "lambda_function_2" {
+  source = "github.com/nsbno/terraform-aws-lambda?ref=1.0.0"
+
+  service_name   = "my-function"
+  component_name = "lambda-2"
+
+  artifact_type = "s3"
+  artifact      = data.vy_lambda_artifact.lambda_2
 }
 ```
 
@@ -33,22 +72,25 @@ ECR Repository will be validated to ensure it exists in your AWS service account
 
 ```terraform
 # Get information about an ECR Image based on GitHub repository name
-data "vy_lambda_artifact" "this" {
+data "vy_lambda_artifact" "this_in_ecr" {
   github_repository_name = "infrademo-demo-app"
   ecr_repository_name    = "infrademo-demo-repo"
 }
 
 # Use the ECR artifact in a Lambda module
-module "lambda" {
-  source = "github.com/nsbno/terraform-aws-lambda?ref=x.y.z"
+module "lambda_in_ecr" {
+  source = "github.com/nsbno/terraform-aws-lambda?ref=1.0.0"
 
   service_name  = "my-function"
   artifact_type = "ecr"
-  artifact      = data.vy_lambda_artifact.this
+  artifact      = data.vy_lambda_artifact.this_in_ecr
 }
 ```
 
-## Mono Repo Usage
+## Monorepo Usage
+
+If your repository consist of multiple Microservices, or individual Terraform States.
+Then the property `working_directory` is useful for you. 
 
 ```terraform
 # For monorepos, you can specify a working directory within the repository where the lambda code is stored
@@ -59,7 +101,7 @@ data "vy_lambda_artifact" "user_service" {
 
 # Use the S3 artifact in a Lambda module
 module "lambda" {
-  source = "github.com/nsbno/terraform-aws-lambda?ref=x.y.z"
+  source = "github.com/nsbno/terraform-aws-lambda?ref=1.0.0"
 
   service_name  = "my-function"
   artifact_type = "s3"
@@ -72,7 +114,7 @@ data "vy_lambda_artifact" "payment_service" {
 }
 
 module "payment_lambda" {
-  source = "github.com/nsbno/terraform-aws-lambda?ref=x.y.z"
+  source = "github.com/nsbno/terraform-aws-lambda?ref=1.0.0"
 
   service_name  = "my-function"
   artifact_type = "s3"
@@ -90,7 +132,8 @@ module "payment_lambda" {
 ### Optional
 
 - `ecr_repository_name` (String) *Only if artifact type is ECR.* The ECR repository name where the Lambda image is stored.
-- `working_directory` (String) The directory in the GitHub repository to find the artifact for.
+- `path` (String) Directory to where the artifact is located, under `github_repository_name` and `working_directory`.Only relevant for S3 artifacts.Use `path` if you have multiple artifacts under the same `working_directory` or Terraform state
+- `working_directory` (String) Directory in the GitHub repository to find the artifact.`working_directory` is useful for monorepo systems, where you have multiple Terraform States.When specified, we require that you also specify [`working-directory` for the Terraform deploy job in Github actions](https://github.com/nsbno/platform-actions/blob/main/.github/workflows/deployment.all-environments-terraform.yml#L15)
 
 ### Read-Only
 

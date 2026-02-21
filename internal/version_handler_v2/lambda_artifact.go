@@ -16,6 +16,7 @@ type LambdaArtifact struct {
 	WorkingDirectory     string `json:"working_directory"`
 	GitSha               string `json:"git_sha"`
 	Branch               string `json:"branch"`
+	Path                 string `json:"path"`
 	ServiceAccountID     string `json:"service_account_id"`
 	ECRRepositoryName    string `json:"ecr_repository_name"`
 	ECRRepositoryURI     string `json:"ecr_repository_uri"`
@@ -25,7 +26,14 @@ type LambdaArtifact struct {
 	S3BucketName         string `json:"bucket_name"`
 }
 
-func (c Client) ReadLambdaArtifact(githubRepositoryName string, ecrRepositoryName string, workingDirectory string,
+// normalizePath strips leading "./" and "/" prefixes from a directory path.
+func normalizePath(p string) string {
+	p = strings.TrimPrefix(p, "./")
+	p = strings.TrimPrefix(p, "/")
+	return p
+}
+
+func (c Client) ReadLambdaArtifact(githubRepositoryName string, ecrRepositoryName string, workingDirectory string, path string,
 	lambdaArtifact *LambdaArtifact) error {
 
 	protocol := "https://"
@@ -39,11 +47,12 @@ func (c Client) ReadLambdaArtifact(githubRepositoryName string, ecrRepositoryNam
 		q = append(q, "ecr_repository_name="+url.QueryEscape(ecrRepositoryName))
 	}
 	if workingDirectory != "" {
-		// Remove leading ./ and / from working directory
-		normalizedWorkingDir := strings.TrimPrefix(workingDirectory, "./")
-		normalizedWorkingDir = strings.TrimPrefix(normalizedWorkingDir, "/")
-		q = append(q, "working_directory="+url.QueryEscape(normalizedWorkingDir))
+		q = append(q, "working_directory="+url.QueryEscape(normalizePath(workingDirectory)))
 	}
+	if path != "" {
+		q = append(q, "path="+url.QueryEscape(normalizePath(path)))
+	}
+
 	if len(q) > 0 {
 		reqURL = reqURL + "?" + strings.Join(q, "&")
 	}
