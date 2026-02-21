@@ -36,6 +36,7 @@ func TestLambdaArtifact_Basic(t *testing.T) {
 		mockResponse := map[string]string{
 			"github_repository_name": "infrademo-demo-app",
 			"working_directory":      "",
+			"path":                   "",
 			"git_sha":                "abc123",
 			"branch":                 "main",
 			"service_account_id":     "123456789012",
@@ -111,6 +112,7 @@ func TestLambdaArtifact_WithWorkingDirectory(t *testing.T) {
 		mockResponse := map[string]string{
 			"github_repository_name": "infrademo-demo-app",
 			"working_directory":      "services/lambda-function",
+			"path":                   "",
 			"git_sha":                "def456",
 			"branch":                 "main",
 			"service_account_id":     "123456789012",
@@ -194,6 +196,7 @@ func TestLambdaArtifact_ECR(t *testing.T) {
 			"region":                 "eu-west-1",
 			"s3_object_path":         "",
 			"s3_object_version":      "",
+			"path":                   "",
 		}
 
 		w.Header().Set("Content-Type", "application/json")

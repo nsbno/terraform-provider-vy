@@ -12,6 +12,10 @@ resource "vy_deployment_account" "test" {
 }
 `
 
+// It's impossible for this test to work stably
+// as it expects that any of the AWS accounts you have assumed during
+// the test run, isn't already registered in enroll-accounts.
+// But that only holds true at-most once
 func TestAccDeploymentAccount(t *testing.T) {
 	expected_resource_name := "vy_deployment_account.test"
 

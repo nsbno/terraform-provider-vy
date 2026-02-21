@@ -3,6 +3,6 @@ resource "vy_app_client" "backend_application" {
   type = "backend"
 
   scopes = [
-	"https://infrademo.vydev.io/demo/read"  # Refers to the resource server defined above
+    "https://infrademo.vydev.io/demo/read" # Refers to the resource server defined above
   ]
 }

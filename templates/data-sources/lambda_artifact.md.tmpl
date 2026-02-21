@@ -14,12 +14,22 @@ S3 Bucket and Object will be validated to ensure they exist in your AWS service 
 
 {{ tffile (printf "examples/data-sources/%s/s3.tf" .Name)}}
 
+### Multiple Lambda Functions
+
+More often than not you have multiple Lambda Functions per service. 
+This is how you can reference the artifacts for each of them.
+
+{{ tffile (printf "examples/data-sources/%s/s3_multi_lambda.tf" .Name)}}
+
 ## Using ECR Images
 ECR Repository will be validated to ensure it exists in your AWS service account id.
 
 {{ tffile (printf "examples/data-sources/%s/ecr.tf" .Name)}}
 
-## Mono Repo Usage
+## Monorepo Usage
+
+If your repository consist of multiple Microservices, or individual Terraform States.
+Then the property `working_directory` is useful for you. 
 
 {{ tffile (printf "examples/data-sources/%s/monorepo.tf" .Name)}}
 

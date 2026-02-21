@@ -6,7 +6,7 @@ data "vy_lambda_artifact" "user_service" {
 
 # Use the S3 artifact in a Lambda module
 module "lambda" {
-  source = "github.com/nsbno/terraform-aws-lambda?ref=x.y.z"
+  source = "github.com/nsbno/terraform-aws-lambda?ref=1.0.0"
 
   service_name  = "my-function"
   artifact_type = "s3"
@@ -19,7 +19,7 @@ data "vy_lambda_artifact" "payment_service" {
 }
 
 module "payment_lambda" {
-  source = "github.com/nsbno/terraform-aws-lambda?ref=x.y.z"
+  source = "github.com/nsbno/terraform-aws-lambda?ref=1.0.0"
 
   service_name  = "my-function"
   artifact_type = "s3"
