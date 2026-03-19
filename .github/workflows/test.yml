@@ -1,28 +1,23 @@
 # Terraform Provider testing workflow.
 name: Tests
 
-# This GitHub action runs your tests for each pull request and push.
-# Optionally, you can turn it on using a schedule for regular testing.
 on:
   pull_request:
     paths-ignore:
       - 'README.md'
   push:
+    branches:
+      - main
     paths-ignore:
       - 'README.md'
 
-# Testing only needs permissions to read the repository contents.
 permissions:
   contents: read
 
-# Default values to simplify job configurations below.
 env:
-  # Go language version to use for building. This value should also be updated
-  # in the release workflow if changed.
-  GO_VERSION: '1.25'
+  GO_VERSION: '1.24'
 
 jobs:
-  # Ensure project builds before running testing matrix
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -35,32 +30,15 @@ jobs:
       - run: go mod download
       - run: go build -v .
 
-  # Run acceptance tests in a matrix with Terraform CLI versions
-#  test:
-#    name: Terraform Provider Acceptance Tests
-#    needs: build
-#    runs-on: ubuntu-latest
-#    timeout-minutes: 15
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        # list whatever Terraform versions here you would like to support
-#        terraform:
-#          - '1.1.*'
-#    steps:
-#      - uses: actions/checkout@v5
-#      - uses: actions/setup-go@v6
-#        with:
-#          go-version: ${{ env.GO_VERSION }}
-#      - uses: hashicorp/setup-terraform@v3
-#        with:
-#          terraform_version: ${{ matrix.terraform }}
-#          terraform_wrapper: false
-#      - run: go mod download
-#      - env:
-#          TF_ACC: "1"
-#          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-#        run: go test -v -cover ./internal/provider/
-#        timeout-minutes: 10
+  test:
+    name: Unit Tests
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - run: go mod download
+      - run: go test -v -cover ./...
