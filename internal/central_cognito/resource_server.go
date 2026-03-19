@@ -30,16 +30,26 @@ type ResourceServerUpdateRequest struct {
 }
 
 func (c Client) ReadResourceServer(identifier string, server *ResourceServer) error {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
 	request, err := http.NewRequest(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/resource-servers/%s", c.BaseUrl, url.QueryEscape(identifier)),
+		fmt.Sprintf("%s%s/resource-servers/%s", protocol, c.BaseUrl, url.QueryEscape(identifier)),
 		nil,
 	)
 	if err != nil {
 		return err
 	}
 
-	response, err := aws_auth.SignedRequest(request)
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
 	if err != nil {
 		return err
 	}
@@ -62,6 +72,11 @@ func (c Client) ReadResourceServer(identifier string, server *ResourceServer) er
 }
 
 func (c Client) CreateResourceServer(server ResourceServer) error {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
 	var data bytes.Buffer
 
 	err := json.NewEncoder(&data).Encode(server)
@@ -71,14 +86,19 @@ func (c Client) CreateResourceServer(server ResourceServer) error {
 
 	request, err := http.NewRequest(
 		http.MethodPost,
-		fmt.Sprintf("https://%s/resource-servers", c.BaseUrl),
+		fmt.Sprintf("%s%s/resource-servers", protocol, c.BaseUrl),
 		&data,
 	)
 	if err != nil {
 		return err
 	}
 
-	response, err := aws_auth.SignedRequest(request)
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
 	if err != nil {
 		return err
 	}
@@ -95,6 +115,11 @@ func (c Client) CreateResourceServer(server ResourceServer) error {
 }
 
 func (c Client) UpdateResourceServer(updateRequest ResourceServerUpdateRequest) error {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
 	var data bytes.Buffer
 
 	err := json.NewEncoder(&data).Encode(updateRequest)
@@ -104,14 +129,19 @@ func (c Client) UpdateResourceServer(updateRequest ResourceServerUpdateRequest) 
 
 	request, err := http.NewRequest(
 		http.MethodPut,
-		fmt.Sprintf("https://%s/resource-servers/%s", c.BaseUrl, url.QueryEscape(updateRequest.Identifier)),
+		fmt.Sprintf("%s%s/resource-servers/%s", protocol, c.BaseUrl, url.QueryEscape(updateRequest.Identifier)),
 		&data,
 	)
 	if err != nil {
 		return err
 	}
 
-	response, err := aws_auth.SignedRequest(request)
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
 	if err != nil {
 		return err
 	}
@@ -127,16 +157,26 @@ func (c Client) UpdateResourceServer(updateRequest ResourceServerUpdateRequest) 
 }
 
 func (c Client) DeleteResourceServer(identifier string) error {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
 	request, err := http.NewRequest(
 		http.MethodDelete,
-		fmt.Sprintf("https://%s/resource-servers/%s", c.BaseUrl, url.QueryEscape(identifier)),
+		fmt.Sprintf("%s%s/resource-servers/%s", protocol, c.BaseUrl, url.QueryEscape(identifier)),
 		nil,
 	)
 	if err != nil {
 		return err
 	}
 
-	response, err := aws_auth.SignedRequest(request)
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
 	if err != nil {
 		return err
 	}
@@ -157,6 +197,11 @@ type ImportResourceServerRequest struct {
 }
 
 func (c Client) ImportResourceServer(identifier string, server *ResourceServer) error {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
 	var data bytes.Buffer
 
 	err := json.NewEncoder(&data).Encode(ImportResourceServerRequest{identifier})
@@ -166,14 +211,19 @@ func (c Client) ImportResourceServer(identifier string, server *ResourceServer) 
 
 	request, err := http.NewRequest(
 		http.MethodPost,
-		fmt.Sprintf("https://%s/import/resource-server", c.BaseUrl),
+		fmt.Sprintf("%s%s/import/resource-server", protocol, c.BaseUrl),
 		&data,
 	)
 	if err != nil {
 		return err
 	}
 
-	response, err := aws_auth.SignedRequest(request)
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
 	if err != nil {
 		return err
 	}
