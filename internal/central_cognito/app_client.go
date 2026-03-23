@@ -31,16 +31,26 @@ type AppClientUpdateRequest struct {
 }
 
 func (c Client) ReadAppClient(name string, server *AppClient) error {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
 	request, err := http.NewRequest(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/app-clients/%s", c.BaseUrl, url.QueryEscape(name)),
+		fmt.Sprintf("%s%s/app-clients/%s", protocol, c.BaseUrl, url.QueryEscape(name)),
 		nil,
 	)
 	if err != nil {
 		return err
 	}
 
-	response, err := aws_auth.SignedRequest(request)
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
 	if err != nil {
 		return err
 	}
@@ -63,6 +73,11 @@ func (c Client) ReadAppClient(name string, server *AppClient) error {
 }
 
 func (c Client) CreateAppClient(server AppClient) (*AppClient, error) {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
 	var data bytes.Buffer
 
 	err := json.NewEncoder(&data).Encode(server)
@@ -72,14 +87,19 @@ func (c Client) CreateAppClient(server AppClient) (*AppClient, error) {
 
 	request, err := http.NewRequest(
 		http.MethodPost,
-		fmt.Sprintf("https://%s/app-clients", c.BaseUrl),
+		fmt.Sprintf("%s%s/app-clients", protocol, c.BaseUrl),
 		&data,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := aws_auth.SignedRequest(request)
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +122,11 @@ func (c Client) CreateAppClient(server AppClient) (*AppClient, error) {
 }
 
 func (c Client) UpdateAppClient(updateRequest AppClientUpdateRequest) error {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
 	var data bytes.Buffer
 
 	err := json.NewEncoder(&data).Encode(updateRequest)
@@ -111,14 +136,19 @@ func (c Client) UpdateAppClient(updateRequest AppClientUpdateRequest) error {
 
 	request, err := http.NewRequest(
 		http.MethodPut,
-		fmt.Sprintf("https://%s/app-clients/%s", c.BaseUrl, url.QueryEscape(updateRequest.Name)),
+		fmt.Sprintf("%s%s/app-clients/%s", protocol, c.BaseUrl, url.QueryEscape(updateRequest.Name)),
 		&data,
 	)
 	if err != nil {
 		return err
 	}
 
-	response, err := aws_auth.SignedRequest(request)
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
 	if err != nil {
 		return err
 	}
@@ -134,16 +164,26 @@ func (c Client) UpdateAppClient(updateRequest AppClientUpdateRequest) error {
 }
 
 func (c Client) DeleteAppClient(name string) error {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
 	request, err := http.NewRequest(
 		http.MethodDelete,
-		fmt.Sprintf("https://%s/app-clients/%s", c.BaseUrl, url.QueryEscape(name)),
+		fmt.Sprintf("%s%s/app-clients/%s", protocol, c.BaseUrl, url.QueryEscape(name)),
 		nil,
 	)
 	if err != nil {
 		return err
 	}
 
-	response, err := aws_auth.SignedRequest(request)
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
 	if err != nil {
 		return err
 	}
@@ -164,6 +204,11 @@ type ImportAppClientRequest struct {
 }
 
 func (c Client) ImportAppClient(client_id string, server *AppClient) error {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
 	var data bytes.Buffer
 
 	err := json.NewEncoder(&data).Encode(ImportAppClientRequest{client_id})
@@ -173,14 +218,19 @@ func (c Client) ImportAppClient(client_id string, server *AppClient) error {
 
 	request, err := http.NewRequest(
 		http.MethodPost,
-		fmt.Sprintf("https://%s/import/app-client", c.BaseUrl),
+		fmt.Sprintf("%s%s/import/app-client", protocol, c.BaseUrl),
 		&data,
 	)
 	if err != nil {
 		return err
 	}
 
-	response, err := aws_auth.SignedRequest(request)
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
 	if err != nil {
 		return err
 	}
