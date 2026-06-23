@@ -41,6 +41,11 @@ func (s FrontendArtifactDataSource) Schema(ctx context.Context, request datasour
 				MarkdownDescription: "The directory in the GitHub repository to find the artifact for.",
 				Optional:            true,
 			},
+			"path": schema.StringAttribute{
+				MarkdownDescription: "Directory to where the artifact is located, under `github_repository_name` and `working_directory`. " +
+					"Use `path` if you have multiple frontend artifacts under the same `working_directory` or Terraform state",
+				Optional: true,
+			},
 			"git_sha": schema.StringAttribute{
 				MarkdownDescription: "The Git SHA of the commit that was used to build the artifact.",
 				Computed:            true,
@@ -102,6 +107,7 @@ type FrontendArtifactDataSourceModel struct {
 	Id                   types.String `tfsdk:"id"`
 	GitHubRepositoryName types.String `tfsdk:"github_repository_name"`
 	WorkingDirectory     types.String `tfsdk:"working_directory"`
+	Path                 types.String `tfsdk:"path"`
 	GitSha               types.String `tfsdk:"git_sha"`
 	Branch               types.String `tfsdk:"branch"`
 	ServiceAccountID     types.String `tfsdk:"service_account_id"`
@@ -125,7 +131,7 @@ func (s FrontendArtifactDataSource) Read(ctx context.Context, request datasource
 		state.GitHubRepositoryName.ValueString(),
 		"", // No ECR repository name for frontend artifacts
 		state.WorkingDirectory.ValueString(),
-		"",
+		state.Path.ValueString(),
 		&version,
 	)
 
@@ -136,12 +142,8 @@ func (s FrontendArtifactDataSource) Read(ctx context.Context, request datasource
 		)
 	}
 
-	if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
-		state.Id = types.StringValue(fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), version.WorkingDirectory))
-	} else {
-		state.Id = state.GitHubRepositoryName
-	}
 	state.WorkingDirectory = types.StringValue(version.WorkingDirectory)
+	state.Path = types.StringValue(version.Path)
 	state.GitSha = types.StringValue(version.GitSha)
 	state.Branch = types.StringValue(version.Branch)
 	state.ServiceAccountID = types.StringValue(version.ServiceAccountID)
@@ -157,5 +159,23 @@ func (s FrontendArtifactDataSource) Read(ctx context.Context, request datasource
 		state.S3SourcePath = types.StringNull()
 	}
 
+	state.Id = types.StringValue(frontendArtifactStateId(&state))
+
 	response.Diagnostics.Append(response.State.Set(ctx, &state)...)
+}
+
+func frontendArtifactStateId(state *FrontendArtifactDataSourceModel) string {
+	var stateId string
+
+	if workingDir := state.WorkingDirectory.ValueString(); workingDir != "" {
+		stateId = fmt.Sprintf("%s/%s", state.GitHubRepositoryName.ValueString(), workingDir)
+	} else {
+		stateId = state.GitHubRepositoryName.ValueString()
+	}
+
+	if path := state.Path.ValueString(); path != "" {
+		stateId = fmt.Sprintf("%s/%s", stateId, path)
+	}
+
+	return stateId
 }
