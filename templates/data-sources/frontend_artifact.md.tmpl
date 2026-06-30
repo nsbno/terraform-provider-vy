@@ -14,4 +14,10 @@ S3 Bucket and Object will be validated to ensure they exist in your AWS service 
 
 {{ tffile (printf "examples/data-sources/%s/main.tf" .Name)}}
 
+## Multiple Frontends
+
+If you have multiple frontend applications in the same repository, use `path` to reference each one.
+
+{{ tffile (printf "examples/data-sources/%s/multiple.tf" .Name)}}
+
 {{ .SchemaMarkdown | trimspace }}
