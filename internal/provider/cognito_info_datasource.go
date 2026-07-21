@@ -22,11 +22,13 @@ type CognitoInfoDataSource struct {
 }
 
 type CognitoInfoDataSourceModel struct {
-	Id        types.String `tfsdk:"id"`
-	AuthUrl   types.String `tfsdk:"auth_url"`
-	JwksUrl   types.String `tfsdk:"jwks_url"`
-	OpenIdUrl types.String `tfsdk:"open_id_url"`
-	Issuer    types.String `tfsdk:"issuer"`
+	Id          types.String `tfsdk:"id"`
+	UserPoolId  types.String `tfsdk:"user_pool_id"`
+	UserPoolArn types.String `tfsdk:"user_pool_arn"`
+	AuthUrl     types.String `tfsdk:"auth_url"`
+	JwksUrl     types.String `tfsdk:"jwks_url"`
+	OpenIdUrl   types.String `tfsdk:"open_id_url"`
+	Issuer      types.String `tfsdk:"issuer"`
 }
 
 func (c *CognitoInfoDataSource) Metadata(ctx context.Context, request datasource.MetadataRequest, response *datasource.MetadataResponse) {
@@ -37,7 +39,16 @@ func (c *CognitoInfoDataSource) Schema(ctx context.Context, request datasource.S
 	response.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The environment name (e.g. prod, stage, test, dev)",
+			},
+			"user_pool_id": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The ID of the Cognito User Pool",
+			},
+			"user_pool_arn": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The ARN of the Cognito User Pool",
 			},
 			"auth_url": schema.StringAttribute{
 				Computed:            true,
@@ -87,63 +98,39 @@ func (c *CognitoInfoDataSource) Read(ctx context.Context, request datasource.Rea
 
 	if c.environment == "prod" {
 		state = CognitoInfoDataSourceModel{
-			AuthUrl: types.StringValue(
-				"https://auth.cognito.vydev.io",
-			),
-			JwksUrl: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE/.well-known/jwks.json",
-			),
-			OpenIdUrl: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE/.well-known/openid-configuration",
-			),
-			Issuer: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE",
-			),
+			UserPoolId:  types.StringValue("eu-west-1_e6o46c1oE"),
+			UserPoolArn: types.StringValue("arn:aws:cognito-idp:eu-west-1:387958190215:userpool/eu-west-1_e6o46c1oE"),
+			AuthUrl:     types.StringValue("https://auth.cognito.vydev.io"),
+			JwksUrl:     types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE/.well-known/jwks.json"),
+			OpenIdUrl:   types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE/.well-known/openid-configuration"),
+			Issuer:      types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE"),
 		}
 	} else if c.environment == "stage" {
 		state = CognitoInfoDataSourceModel{
-			AuthUrl: types.StringValue(
-				"https://auth.stage.cognito.vydev.io",
-			),
-			JwksUrl: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW/.well-known/jwks.json",
-			),
-			OpenIdUrl: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW/.well-known/openid-configuration",
-			),
-			Issuer: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW",
-			),
+			UserPoolId:  types.StringValue("eu-west-1_AUYQ679zW"),
+			UserPoolArn: types.StringValue("arn:aws:cognito-idp:eu-west-1:214014793664:userpool/eu-west-1_AUYQ679zW"),
+			AuthUrl:     types.StringValue("https://auth.stage.cognito.vydev.io"),
+			JwksUrl:     types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW/.well-known/jwks.json"),
+			OpenIdUrl:   types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW/.well-known/openid-configuration"),
+			Issuer:      types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW"),
 		}
 	} else if c.environment == "test" {
 		state = CognitoInfoDataSourceModel{
-			AuthUrl: types.StringValue(
-				"https://auth.test.cognito.vydev.io",
-			),
-			JwksUrl: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT/.well-known/jwks.json",
-			),
-			OpenIdUrl: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT/.well-known/openid-configuration",
-			),
-			Issuer: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT",
-			),
+			UserPoolId:  types.StringValue("eu-west-1_Z53b9AbeT"),
+			UserPoolArn: types.StringValue("arn:aws:cognito-idp:eu-west-1:231176028624:userpool/eu-west-1_Z53b9AbeT"),
+			AuthUrl:     types.StringValue("https://auth.test.cognito.vydev.io"),
+			JwksUrl:     types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT/.well-known/jwks.json"),
+			OpenIdUrl:   types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT/.well-known/openid-configuration"),
+			Issuer:      types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT"),
 		}
 	} else if c.environment == "dev" {
 		state = CognitoInfoDataSourceModel{
-			AuthUrl: types.StringValue(
-				"https://auth.dev.cognito.vydev.io",
-			),
-			JwksUrl: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk/.well-known/jwks.json",
-			),
-			OpenIdUrl: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk/.well-known/openid-configuration",
-			),
-			Issuer: types.StringValue(
-				"https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk",
-			),
+			UserPoolId:  types.StringValue("eu-west-1_0AvVv5Wyk"),
+			UserPoolArn: types.StringValue("arn:aws:cognito-idp:eu-west-1:834626710667:userpool/eu-west-1_0AvVv5Wyk"),
+			AuthUrl:     types.StringValue("https://auth.dev.cognito.vydev.io"),
+			JwksUrl:     types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk/.well-known/jwks.json"),
+			OpenIdUrl:   types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk/.well-known/openid-configuration"),
+			Issuer:      types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk"),
 		}
 	}
 

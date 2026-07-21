@@ -22,6 +22,8 @@ func TestAccCognitoInfo(t *testing.T) {
 			{
 				Config: testAccCognitoInfo,
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(expected_resource_name, "user_pool_id"),
+					resource.TestCheckResourceAttrSet(expected_resource_name, "user_pool_arn"),
 					resource.TestCheckResourceAttrSet(expected_resource_name, "auth_url"),
 					resource.TestCheckResourceAttrSet(expected_resource_name, "jwks_url"),
 					resource.TestCheckResourceAttrSet(expected_resource_name, "open_id_url"),
