@@ -41,7 +41,7 @@ func (c *CognitoInfoDataSource) Schema(ctx context.Context, request datasource.S
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The environment name (e.g. prod, stage, test, dev)",
+				MarkdownDescription: "The environment name (e.g. prod, stage, test, dev). Same value as `environment`.",
 			},
 			"environment": schema.StringAttribute{
 				Computed:            true,

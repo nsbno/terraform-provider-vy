@@ -22,7 +22,8 @@ data "vy_cognito_info" "this" {}
 ### Read-Only
 
 - `auth_url` (String) The URL where users can authenticate
-- `id` (String) The environment name (e.g. prod, stage, test, dev)
+- `environment` (String) The environment name (e.g. prod, stage, test, dev)
+- `id` (String) The environment name (e.g. prod, stage, test, dev). Same value as `environment`.
 - `issuer` (String) The URI for the issuer
 - `jwks_url` (String) The URL for the /.well-known/jwks.json
 - `open_id_url` (String) The URL for the /.well-known/openid-configuration
