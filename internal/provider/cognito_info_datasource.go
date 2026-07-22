@@ -23,6 +23,7 @@ type CognitoInfoDataSource struct {
 
 type CognitoInfoDataSourceModel struct {
 	Id          types.String `tfsdk:"id"`
+	Environment types.String `tfsdk:"environment"`
 	UserPoolId  types.String `tfsdk:"user_pool_id"`
 	UserPoolArn types.String `tfsdk:"user_pool_arn"`
 	AuthUrl     types.String `tfsdk:"auth_url"`
@@ -39,6 +40,10 @@ func (c *CognitoInfoDataSource) Schema(ctx context.Context, request datasource.S
 	response.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The environment name (e.g. prod, stage, test, dev)",
+			},
+			"environment": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The environment name (e.g. prod, stage, test, dev)",
 			},
@@ -135,6 +140,7 @@ func (c *CognitoInfoDataSource) Read(ctx context.Context, request datasource.Rea
 	}
 
 	state.Id = types.StringValue(c.environment)
+	state.Environment = types.StringValue(c.environment)
 
 	response.State.Set(ctx, &state)
 }
