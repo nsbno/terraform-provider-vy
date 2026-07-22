@@ -96,51 +96,45 @@ func (c *CognitoInfoDataSource) Configure(ctx context.Context, request datasourc
 	c.client = configuration.CognitoClient
 }
 
+type cognitoEnvironmentConfig struct {
+	userPoolId string
+	accountId  string
+	authUrl    string
+}
+
+var cognitoEnvironments = map[string]cognitoEnvironmentConfig{
+	"prod":  {userPoolId: "eu-west-1_e6o46c1oE", accountId: "387958190215", authUrl: "https://auth.cognito.vydev.io"},
+	"stage": {userPoolId: "eu-west-1_AUYQ679zW", accountId: "214014793664", authUrl: "https://auth.stage.cognito.vydev.io"},
+	"test":  {userPoolId: "eu-west-1_Z53b9AbeT", accountId: "231176028624", authUrl: "https://auth.test.cognito.vydev.io"},
+	"dev":   {userPoolId: "eu-west-1_0AvVv5Wyk", accountId: "834626710667", authUrl: "https://auth.dev.cognito.vydev.io"},
+}
+
+func cognitoStateFromConfig(environment string, cognitoConfig cognitoEnvironmentConfig) CognitoInfoDataSourceModel {
+	cognitoBase := fmt.Sprintf("https://cognito-idp.eu-west-1.amazonaws.com/%s", cognitoConfig.userPoolId)
+	return CognitoInfoDataSourceModel{
+		Id:          types.StringValue(environment),
+		Environment: types.StringValue(environment),
+		UserPoolId:  types.StringValue(cognitoConfig.userPoolId),
+		UserPoolArn: types.StringValue(fmt.Sprintf("arn:aws:cognito-idp:eu-west-1:%s:userpool/%s", cognitoConfig.accountId, cognitoConfig.userPoolId)),
+		AuthUrl:     types.StringValue(cognitoConfig.authUrl),
+		JwksUrl:     types.StringValue(cognitoBase + "/.well-known/jwks.json"),
+		OpenIdUrl:   types.StringValue(cognitoBase + "/.well-known/openid-configuration"),
+		Issuer:      types.StringValue(cognitoBase),
+	}
+}
+
 func (c *CognitoInfoDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
 	// TODO: This should be fetched from the service.
 	//	     Doing it quickly now to get the feature shipped.
-	var state CognitoInfoDataSourceModel
-
-	if c.environment == "prod" {
-		state = CognitoInfoDataSourceModel{
-			UserPoolId:  types.StringValue("eu-west-1_e6o46c1oE"),
-			UserPoolArn: types.StringValue("arn:aws:cognito-idp:eu-west-1:387958190215:userpool/eu-west-1_e6o46c1oE"),
-			AuthUrl:     types.StringValue("https://auth.cognito.vydev.io"),
-			JwksUrl:     types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE/.well-known/jwks.json"),
-			OpenIdUrl:   types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE/.well-known/openid-configuration"),
-			Issuer:      types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_e6o46c1oE"),
-		}
-	} else if c.environment == "stage" {
-		state = CognitoInfoDataSourceModel{
-			UserPoolId:  types.StringValue("eu-west-1_AUYQ679zW"),
-			UserPoolArn: types.StringValue("arn:aws:cognito-idp:eu-west-1:214014793664:userpool/eu-west-1_AUYQ679zW"),
-			AuthUrl:     types.StringValue("https://auth.stage.cognito.vydev.io"),
-			JwksUrl:     types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW/.well-known/jwks.json"),
-			OpenIdUrl:   types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW/.well-known/openid-configuration"),
-			Issuer:      types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_AUYQ679zW"),
-		}
-	} else if c.environment == "test" {
-		state = CognitoInfoDataSourceModel{
-			UserPoolId:  types.StringValue("eu-west-1_Z53b9AbeT"),
-			UserPoolArn: types.StringValue("arn:aws:cognito-idp:eu-west-1:231176028624:userpool/eu-west-1_Z53b9AbeT"),
-			AuthUrl:     types.StringValue("https://auth.test.cognito.vydev.io"),
-			JwksUrl:     types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT/.well-known/jwks.json"),
-			OpenIdUrl:   types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT/.well-known/openid-configuration"),
-			Issuer:      types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_Z53b9AbeT"),
-		}
-	} else if c.environment == "dev" {
-		state = CognitoInfoDataSourceModel{
-			UserPoolId:  types.StringValue("eu-west-1_0AvVv5Wyk"),
-			UserPoolArn: types.StringValue("arn:aws:cognito-idp:eu-west-1:834626710667:userpool/eu-west-1_0AvVv5Wyk"),
-			AuthUrl:     types.StringValue("https://auth.dev.cognito.vydev.io"),
-			JwksUrl:     types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk/.well-known/jwks.json"),
-			OpenIdUrl:   types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk/.well-known/openid-configuration"),
-			Issuer:      types.StringValue("https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0AvVv5Wyk"),
-		}
+	cognitoConfig, found := cognitoEnvironments[c.environment]
+	if !found {
+		response.Diagnostics.AddError(
+			"Unsupported environment",
+			fmt.Sprintf("No Cognito configuration found for environment %q", c.environment),
+		)
+		return
 	}
 
-	state.Id = types.StringValue(c.environment)
-	state.Environment = types.StringValue(c.environment)
-
+	state := cognitoStateFromConfig(c.environment, cognitoConfig)
 	response.State.Set(ctx, &state)
 }
