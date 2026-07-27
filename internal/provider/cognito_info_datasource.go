@@ -41,7 +41,7 @@ func (c *CognitoInfoDataSource) Schema(ctx context.Context, request datasource.S
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The environment name (e.g. prod, stage, test, dev). Same value as `environment`.",
+				MarkdownDescription: "The ID of the Cognito User Pool. Same value as `user_pool_id`.",
 			},
 			"environment": schema.StringAttribute{
 				Computed:            true,
@@ -112,7 +112,7 @@ var cognitoEnvironments = map[string]cognitoEnvironmentConfig{
 func cognitoStateFromConfig(environment string, cognitoConfig cognitoEnvironmentConfig) CognitoInfoDataSourceModel {
 	cognitoBase := fmt.Sprintf("https://cognito-idp.eu-west-1.amazonaws.com/%s", cognitoConfig.userPoolId)
 	return CognitoInfoDataSourceModel{
-		Id:          types.StringValue(environment),
+		Id:          types.StringValue(cognitoConfig.userPoolId),
 		Environment: types.StringValue(environment),
 		UserPoolId:  types.StringValue(cognitoConfig.userPoolId),
 		UserPoolArn: types.StringValue(fmt.Sprintf("arn:aws:cognito-idp:eu-west-1:%s:userpool/%s", cognitoConfig.accountId, cognitoConfig.userPoolId)),

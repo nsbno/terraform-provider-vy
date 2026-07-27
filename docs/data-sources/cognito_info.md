@@ -23,7 +23,7 @@ data "vy_cognito_info" "this" {}
 
 - `auth_url` (String) The URL where users can authenticate
 - `environment` (String) The environment name (e.g. prod, stage, test, dev)
-- `id` (String) The environment name (e.g. prod, stage, test, dev). Same value as `environment`.
+- `id` (String) The ID of the Cognito User Pool. Same value as `user_pool_id`.
 - `issuer` (String) The URI for the issuer
 - `jwks_url` (String) The URL for the /.well-known/jwks.json
 - `open_id_url` (String) The URL for the /.well-known/openid-configuration
