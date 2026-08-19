@@ -192,6 +192,151 @@ func (c Client) DeleteResourceServer(identifier string) error {
 	return nil
 }
 
+func (c Client) CreateResourceServerScope(identifier string, scope Scope) (*ResourceServer, error) {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
+	var data bytes.Buffer
+
+	err := json.NewEncoder(&data).Encode(scope)
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("%s%s/resource-servers/%s/scopes", protocol, c.BaseUrl, url.QueryEscape(identifier)),
+		&data,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 201 {
+		str, _ := io.ReadAll(response.Body)
+
+		return nil, errors.New(fmt.Sprintf("could not create scope. %s", str))
+	}
+
+	var server ResourceServer
+	if err := json.NewDecoder(response.Body).Decode(&server); err != nil {
+		return nil, err
+	}
+
+	return &server, nil
+}
+
+func (c Client) UpdateResourceServerScope(identifier string, scope Scope) (*ResourceServer, error) {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
+	var data bytes.Buffer
+
+	err := json.NewEncoder(&data).Encode(scope)
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequest(
+		http.MethodPut,
+		fmt.Sprintf("%s%s/resource-servers/%s/scopes", protocol, c.BaseUrl, url.QueryEscape(identifier)),
+		&data,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		str, _ := io.ReadAll(response.Body)
+
+		return nil, errors.New(fmt.Sprintf("could not update scope. %s", str))
+	}
+
+	var server ResourceServer
+	if err := json.NewDecoder(response.Body).Decode(&server); err != nil {
+		return nil, err
+	}
+
+	return &server, nil
+}
+
+type deleteResourceServerScopeRequest struct {
+	Name string `json:"name"`
+}
+
+func (c Client) DeleteResourceServerScope(identifier string, name string) (*ResourceServer, error) {
+	protocol := "https://"
+	if c.HTTPClient != nil {
+		protocol = "http://"
+	}
+
+	var data bytes.Buffer
+
+	err := json.NewEncoder(&data).Encode(deleteResourceServerScopeRequest{Name: name})
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequest(
+		http.MethodDelete,
+		fmt.Sprintf("%s%s/resource-servers/%s/scopes", protocol, c.BaseUrl, url.QueryEscape(identifier)),
+		&data,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var response *http.Response
+	if c.HTTPClient != nil {
+		response, err = c.HTTPClient.Do(request)
+	} else {
+		response, err = aws_auth.SignedRequest(request)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		str, _ := io.ReadAll(response.Body)
+
+		return nil, errors.New(fmt.Sprintf("could not delete scope. %s", str))
+	}
+
+	var server ResourceServer
+	if err := json.NewDecoder(response.Body).Decode(&server); err != nil {
+		return nil, err
+	}
+
+	return &server, nil
+}
+
 type ImportResourceServerRequest struct {
 	Identifier string `json:"identifier"`
 }

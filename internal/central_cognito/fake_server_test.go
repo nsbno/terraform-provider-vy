@@ -52,6 +52,23 @@ func (api *FakeCentralCognitoAPI) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	case r.Method == http.MethodPost && path == "resource-servers":
 		api.handleCreateResourceServer(w, r)
 
+	case len(segments) == 3 && segments[0] == "resource-servers" && segments[2] == "scopes":
+		identifier, err := url.QueryUnescape(segments[1])
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "invalid URL encoding", "BAD_REQUEST")
+			return
+		}
+		switch r.Method {
+		case http.MethodPost:
+			api.handleCreateResourceServerScope(w, r, identifier)
+		case http.MethodPut:
+			api.handleUpdateResourceServerScope(w, r, identifier)
+		case http.MethodDelete:
+			api.handleDeleteResourceServerScope(w, r, identifier)
+		default:
+			respondWithError(w, http.StatusMethodNotAllowed, "method not allowed", "METHOD_NOT_ALLOWED")
+		}
+
 	case len(segments) == 2 && segments[0] == "resource-servers":
 		identifier, err := url.QueryUnescape(segments[1])
 		if err != nil {
@@ -194,6 +211,96 @@ func (api *FakeCentralCognitoAPI) handleUpdateResourceServer(w http.ResponseWrit
 
 	existing.Name = req.Name
 	existing.Scopes = req.Scopes
+	api.ResourceServers[identifier] = existing
+
+	respondWithJSON(w, http.StatusOK, existing)
+}
+
+func (api *FakeCentralCognitoAPI) handleCreateResourceServerScope(w http.ResponseWriter, r *http.Request, identifier string) {
+	var scope Scope
+	if err := json.NewDecoder(r.Body).Decode(&scope); err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid request body: "+err.Error(), "BAD_REQUEST")
+		return
+	}
+
+	existing, ok := api.ResourceServers[identifier]
+	if !ok {
+		respondWithError(w, http.StatusNotFound, fmt.Sprintf("resource server %q not found", identifier), "NOT_FOUND")
+		return
+	}
+
+	for _, s := range existing.Scopes {
+		if s.Name == scope.Name {
+			respondWithError(w, http.StatusConflict, fmt.Sprintf("scope %q already exists", scope.Name), "CONFLICT")
+			return
+		}
+	}
+
+	existing.Scopes = append(existing.Scopes, scope)
+	api.ResourceServers[identifier] = existing
+
+	respondWithJSON(w, http.StatusCreated, existing)
+}
+
+func (api *FakeCentralCognitoAPI) handleUpdateResourceServerScope(w http.ResponseWriter, r *http.Request, identifier string) {
+	var scope Scope
+	if err := json.NewDecoder(r.Body).Decode(&scope); err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid request body: "+err.Error(), "BAD_REQUEST")
+		return
+	}
+
+	existing, ok := api.ResourceServers[identifier]
+	if !ok {
+		respondWithError(w, http.StatusNotFound, fmt.Sprintf("resource server %q not found", identifier), "NOT_FOUND")
+		return
+	}
+
+	found := false
+	for i, s := range existing.Scopes {
+		if s.Name == scope.Name {
+			existing.Scopes[i].Description = scope.Description
+			found = true
+			break
+		}
+	}
+	if !found {
+		respondWithError(w, http.StatusNotFound, fmt.Sprintf("scope %q not found", scope.Name), "NOT_FOUND")
+		return
+	}
+
+	api.ResourceServers[identifier] = existing
+
+	respondWithJSON(w, http.StatusOK, existing)
+}
+
+func (api *FakeCentralCognitoAPI) handleDeleteResourceServerScope(w http.ResponseWriter, r *http.Request, identifier string) {
+	var req deleteResourceServerScopeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid request body: "+err.Error(), "BAD_REQUEST")
+		return
+	}
+
+	existing, ok := api.ResourceServers[identifier]
+	if !ok {
+		respondWithError(w, http.StatusNotFound, fmt.Sprintf("resource server %q not found", identifier), "NOT_FOUND")
+		return
+	}
+
+	remaining := make([]Scope, 0, len(existing.Scopes))
+	found := false
+	for _, s := range existing.Scopes {
+		if s.Name == req.Name {
+			found = true
+			continue
+		}
+		remaining = append(remaining, s)
+	}
+	if !found {
+		respondWithError(w, http.StatusNotFound, fmt.Sprintf("scope %q not found", req.Name), "NOT_FOUND")
+		return
+	}
+
+	existing.Scopes = remaining
 	api.ResourceServers[identifier] = existing
 
 	respondWithJSON(w, http.StatusOK, existing)

@@ -161,6 +161,7 @@ func (p VyProvider) Configure(ctx context.Context, request provider.ConfigureReq
 func (p VyProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewResourceServerResource,
+		NewResourceServerScopeResource,
 		NewAppClientResource,
 		NewDeploymentAccountResource,
 		NewEnvironmentAccountResource,
@@ -174,6 +175,7 @@ func (p VyProvider) DataSources(ctx context.Context) []func() datasource.DataSou
 		NewECSImageDataSource,
 		NewLambdaArtifactDataSource,
 		NewFrontendArtifactDataSource,
+		NewResourceServerDataSource,
 	}
 }
 
