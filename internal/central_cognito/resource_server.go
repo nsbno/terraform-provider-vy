@@ -17,6 +17,9 @@ type Scope struct {
 	Description string `json:"description"`
 }
 
+// ErrResourceServerNotFound is returned by ReadResourceServer on a 404
+var ErrResourceServerNotFound = errors.New("resource server not found")
+
 type ResourceServer struct {
 	Identifier string  `json:"identifier"`
 	Name       string  `json:"name"`
@@ -55,6 +58,10 @@ func (c Client) ReadResourceServer(identifier string, server *ResourceServer) er
 	}
 
 	defer response.Body.Close()
+
+	if response.StatusCode == http.StatusNotFound {
+		return ErrResourceServerNotFound
+	}
 
 	if response.StatusCode != 200 {
 		str, _ := io.ReadAll(response.Body)

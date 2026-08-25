@@ -14,8 +14,8 @@ Looks up an existing resource server by its identifier. Pair this with `vy_resou
 
 ```terraform
 # Look up an existing resource server owned by another module or team
-data "vy_resource_server" "bounded_context" {
-  identifier = "ruteplan.vydev.io"
+data "vy_resource_server" "reiserad_backend" {
+  identifier = "https://services.trafficcontrol.vydev.io/reiserad-backend"
 }
 ```
 

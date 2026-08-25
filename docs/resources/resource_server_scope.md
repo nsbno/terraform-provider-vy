@@ -3,26 +3,29 @@
 page_title: "vy_resource_server_scope Resource - vy"
 subcategory: ""
 description: |-
-  A single scope on a resource server, managed independently of the vy_resource_server resource itself. Look up the resource server with the vy_resource_server data source.
+  A single scope on a resource server, managed independently of the vy_resource_server resource itself. Look up the resource server with the vy_resource_server data source. Do not use this at the same time as a non-empty scopes list on a vy_resource_server resource_server.md for the same resource server.
 ---
 
 # vy_resource_server_scope (Resource)
 
-A single scope on a resource server, managed independently of the `vy_resource_server` resource itself. Look up the resource server with the `vy_resource_server` data source.
+A single scope on a resource server, managed independently of the `vy_resource_server` resource itself. Look up the resource server with the `vy_resource_server` data source. Do not use this at the same time as a non-empty `scopes` list on a [`vy_resource_server`](resource_server.md) for the same resource server.
 
 ## Example Usage
 
 ```terraform
-data "vy_resource_server" "bounded_context" {
-  identifier = "ruteplan.vydev.io"
+data "vy_resource_server" "reiserad_backend" {
+  identifier = "https://services.trafficcontrol.vydev.io/reiserad-backend"
 }
 
 resource "vy_resource_server_scope" "read" {
-  resource_server = data.vy_resource_server.bounded_context.identifier
+  resource_server = data.vy_resource_server.reiserad_backend.identifier
 
-  namespace   = "fillrate" # The name of the microservice/domain. Optional, but helps with namespacing
+  # `namespace` is optional, e.g. your microservice or domain name.
+  # It is combined with `name` as `namespace.name` (e.g. `reiserad.read`), allowing
+  # teams sharing this resource server to avoid name collisions.
+  namespace   = "reiserad"
   name        = "read"
-  description = "Used for reading"
+  description = "Allows reading incidents"
 }
 ```
 
@@ -37,7 +40,7 @@ resource "vy_resource_server_scope" "read" {
 
 ### Optional
 
-- `namespace` (String) An optional namespace for this scope, e.g. the name of the microservice/domain that owns it. Helps avoid name collisions when several teams share one resource server. The scope name sent to Cognito is `namespace/name`, or just `name` if this is omitted.
+- `namespace` (String) `namespace` is optional, e.g. your microservice or domain name. It is combined with `name` as `namespace.name`, allowing teams sharing this resource server to avoid name collisions. A `/` separator isn't used here because Cognito's scope name field rejects that character.
 
 ### Read-Only
 
@@ -51,6 +54,6 @@ The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/c
 
 ```shell
 # Scopes can be imported using the format: <resource_server_identifier>,<scope_name>
-# <scope_name> is the full scope name as stored remotely, i.e. including any "namespace/" prefix.
-terraform import vy_resource_server_scope.read ruteplan.vydev.io,fillrate/read
+# <scope_name> is the full scope name as stored remotely, i.e. including any "namespace." prefix.
+terraform import vy_resource_server_scope.read https://services.trafficcontrol.vydev.io/reiserad-backend,read
 ```

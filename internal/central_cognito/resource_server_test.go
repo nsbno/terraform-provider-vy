@@ -1,6 +1,7 @@
 package central_cognito
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -171,8 +172,8 @@ func TestReadResourceServer_ReturnsErrorWhenServerDoesNotExist(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "could not read resource") {
-		t.Errorf("expected 'could not read resource' in error, got: %v", err)
+	if !errors.Is(err, ErrResourceServerNotFound) {
+		t.Errorf("expected ErrResourceServerNotFound, got: %v", err)
 	}
 }
 

@@ -2,12 +2,14 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -66,8 +68,16 @@ func (r ResourceServerResource) Schema(ctx context.Context, request resource.Sch
 				Required:            true,
 			},
 			"scopes": schema.SetNestedAttribute{
-				MarkdownDescription: "Scopes for this resource server",
-				Optional:            true,
+				MarkdownDescription: "Scopes for this resource server. Alternatively, manage scopes " +
+					"independently with [`vy_resource_server_scope`](resource_server_scope.md) and " +
+					"leave this unset. If set, it's treated as the full list: anything added " +
+					"out of band will be removed on the next apply, and the two aren't locked " +
+					"against each other.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
@@ -184,6 +194,10 @@ func (r ResourceServerResource) Read(ctx context.Context, request resource.ReadR
 
 	var server central_cognito.ResourceServer
 	err := r.client.ReadResourceServer(data.Identifier.ValueString(), &server)
+	if errors.Is(err, central_cognito.ErrResourceServerNotFound) {
+		response.State.RemoveResource(ctx)
+		return
+	}
 	if err != nil {
 		diags = diag.Diagnostics{}
 		diags.AddError(

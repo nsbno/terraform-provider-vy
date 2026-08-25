@@ -3,21 +3,49 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
+	"sync"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 )
 
+// resourceServerScopeLocks serializes scope changes per resource server
+var resourceServerScopeLocks sync.Map // map[string]*sync.Mutex
+
+func lockResourceServerScopes(ctx context.Context, identifier string) func() {
+	value, _ := resourceServerScopeLocks.LoadOrStore(identifier, &sync.Mutex{})
+	mu := value.(*sync.Mutex)
+
+	tflog.Debug(ctx, "Acquiring resource server scope lock", map[string]interface{}{"resource_server": identifier})
+	mu.Lock()
+	tflog.Debug(ctx, "Acquired resource server scope lock", map[string]interface{}{"resource_server": identifier})
+
+	return func() {
+		mu.Unlock()
+		tflog.Debug(ctx, "Released resource server scope lock", map[string]interface{}{"resource_server": identifier})
+	}
+}
+
+// cognitoScopeNamePartPattern matches a valid namespace or name segment,
+// per Cognito's scopeName constraint (excludes "/", '"', '\' and space).
+var cognitoScopeNamePartPattern = regexp.MustCompile(`^[\x21\x23-\x2E\x30-\x5B\x5D-\x7E]+$`)
+
+// scopeName builds the scope name sent to Cognito, joined with "." since
+// Cognito's scopeName field rejects "/".
 func scopeName(namespace, name string) string {
 	if namespace == "" {
 		return name
 	}
-	return namespace + "/" + name
+	return namespace + "." + name
 }
 
 func NewResourceServerScopeResource() resource.Resource {
@@ -44,7 +72,9 @@ func (r ResourceServerScopeResource) Schema(ctx context.Context, request resourc
 	response.Schema = schema.Schema{
 		MarkdownDescription: "A single scope on a resource server, managed independently of the " +
 			"`vy_resource_server` resource itself. Look up the resource server with the " +
-			"`vy_resource_server` data source.",
+			"`vy_resource_server` data source. Do not use this at the same time as a non-empty " +
+			"`scopes` list on a [`vy_resource_server`](resource_server.md) for the same resource " +
+			"server.",
 
 		Attributes: map[string]schema.Attribute{
 			// id is required by the SDKv2 testing framework.
@@ -65,13 +95,19 @@ func (r ResourceServerScopeResource) Schema(ctx context.Context, request resourc
 				},
 			},
 			"namespace": schema.StringAttribute{
-				MarkdownDescription: "An optional namespace for this scope, e.g. the name of the " +
-					"microservice/domain that owns it. Helps avoid name collisions when several " +
-					"teams share one resource server. The scope name sent to Cognito is " +
-					"`namespace/name`, or just `name` if this is omitted.",
+				MarkdownDescription: "`namespace` is optional, e.g. your microservice or domain " +
+					"name. It is combined with `name` as `namespace.name`, allowing teams sharing " +
+					"this resource server to avoid name collisions. A `/` separator isn't used " +
+					"here because Cognito's scope name field rejects that character.",
 				Optional: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						cognitoScopeNamePartPattern,
+						`must match Cognito's allowed scope name characters (letters, digits, and most punctuation, but not "/", '"', '\' or space)`,
+					),
 				},
 			},
 			"name": schema.StringAttribute{
@@ -79,6 +115,12 @@ func (r ResourceServerScopeResource) Schema(ctx context.Context, request resourc
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						cognitoScopeNamePartPattern,
+						`must match Cognito's allowed scope name characters (letters, digits, and most punctuation, but not "/", '"', '\' or space)`,
+					),
 				},
 			},
 			"description": schema.StringAttribute{
@@ -120,6 +162,9 @@ func (r ResourceServerScopeResource) Create(ctx context.Context, request resourc
 
 	resourceServerId := data.ResourceServer.ValueString()
 	name := scopeName(data.Namespace.ValueString(), data.Name.ValueString())
+
+	unlock := lockResourceServerScopes(ctx, resourceServerId)
+	defer unlock()
 
 	_, err := r.client.CreateResourceServerScope(resourceServerId, central_cognito.Scope{
 		Name:        name,
@@ -194,6 +239,9 @@ func (r ResourceServerScopeResource) Update(ctx context.Context, request resourc
 	resourceServerId := data.ResourceServer.ValueString()
 	name := scopeName(data.Namespace.ValueString(), data.Name.ValueString())
 
+	unlock := lockResourceServerScopes(ctx, resourceServerId)
+	defer unlock()
+
 	_, err := r.client.UpdateResourceServerScope(resourceServerId, central_cognito.Scope{
 		Name:        name,
 		Description: data.Description.ValueString(),
@@ -224,6 +272,9 @@ func (r ResourceServerScopeResource) Delete(ctx context.Context, request resourc
 	resourceServerId := data.ResourceServer.ValueString()
 	name := scopeName(data.Namespace.ValueString(), data.Name.ValueString())
 
+	unlock := lockResourceServerScopes(ctx, resourceServerId)
+	defer unlock()
+
 	if _, err := r.client.DeleteResourceServerScope(resourceServerId, name); err != nil {
 		response.Diagnostics.AddError(
 			"Unable to delete scope",
@@ -235,11 +286,9 @@ func (r ResourceServerScopeResource) Delete(ctx context.Context, request resourc
 	response.State.RemoveResource(ctx)
 }
 
-// ImportState imports an existing scope into state.
-// Use the format "<resource_server_identifier>,<scope_name>", where <scope_name> is the full
-// scope name as stored remotely (i.e. including any "namespace/" prefix, if present). The
-// imported resource will have `name` set to the full scope name and `namespace` left empty;
-// split them manually in config afterwards if desired.
+// ImportState imports an existing scope, given "<resource_server_identifier>,<scope_name>".
+// The full scope_name (including any "namespace." prefix) is imported into `name`, with
+// `namespace` left empty
 func (r ResourceServerScopeResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	parts := strings.SplitN(req.ID, ",", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {

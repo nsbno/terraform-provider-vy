@@ -14,30 +14,38 @@ resource "vy_resource_server" "test" {
 `
 
 const testAccResourceServerScope_Basic = testAcc_ProviderConfig + testAccResourceServerScope_ResourceServer + `
-data "vy_resource_server" "test" {
-	identifier = vy_resource_server.test.identifier
-}
-
 resource "vy_resource_server_scope" "read" {
-	resource_server = data.vy_resource_server.test.identifier
+	resource_server = vy_resource_server.test.identifier
 
 	namespace   = "fillrate"
 	name        = "read"
 	description = "Used for reading"
 }
+
+# depends_on forces this to be read after the scope above is created.
+# Otherwise, since nothing else here depends on the scope resource, Terraform
+# would read it as soon as vy_resource_server.test exists, before the scope
+# does, and "scopes" would always come back empty.
+data "vy_resource_server" "test" {
+	identifier = vy_resource_server.test.identifier
+
+	depends_on = [vy_resource_server_scope.read]
+}
 `
 
 const testAccResourceServerScope_DescriptionUpdated = testAcc_ProviderConfig + testAccResourceServerScope_ResourceServer + `
-data "vy_resource_server" "test" {
-	identifier = vy_resource_server.test.identifier
-}
-
 resource "vy_resource_server_scope" "read" {
-	resource_server = data.vy_resource_server.test.identifier
+	resource_server = vy_resource_server.test.identifier
 
 	namespace   = "fillrate"
 	name        = "read"
 	description = "Updated description"
+}
+
+data "vy_resource_server" "test" {
+	identifier = vy_resource_server.test.identifier
+
+	depends_on = [vy_resource_server_scope.read]
 }
 `
 
