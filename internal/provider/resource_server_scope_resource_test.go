@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -48,6 +50,30 @@ data "vy_resource_server" "test" {
 	depends_on = [vy_resource_server_scope.read]
 }
 `
+
+// "fillrate" (8) + "." (1) + 250 "a"s = 259 characters, over Cognito's 256 limit.
+var testAccResourceServerScope_NameTooLong = testAcc_ProviderConfig + testAccResourceServerScope_ResourceServer + `
+resource "vy_resource_server_scope" "too_long" {
+	resource_server = vy_resource_server.test.identifier
+
+	namespace   = "fillrate"
+	name        = "` + strings.Repeat("a", 250) + `"
+	description = "Should fail validation before ever reaching Cognito"
+}
+`
+
+func TestAccResourceServerScope_NameTooLong(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccResourceServerScope_NameTooLong,
+				ExpectError: regexp.MustCompile(`Scope name too long`),
+			},
+		},
+	})
+}
 
 func TestAccResourceServerScope_Basic(t *testing.T) {
 	expected_resource_name := "vy_resource_server_scope.read"

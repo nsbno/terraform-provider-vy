@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -17,6 +18,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 )
+
+// cognitoScopeNameMaxLength is Cognito's max length for the combined
+// scopeName field ("namespace.name")
+const cognitoScopeNameMaxLength = 256
 
 // resourceServerScopeLocks serializes scope changes per resource server
 var resourceServerScopeLocks sync.Map // map[string]*sync.Mutex
@@ -149,6 +154,30 @@ func (r *ResourceServerScopeResource) Configure(ctx context.Context, request res
 	}
 
 	r.client = configuration.CognitoClient
+}
+
+// ValidateConfig checks the combined "namespace.name" against Cognito's length limit
+func (r ResourceServerScopeResource) ValidateConfig(ctx context.Context, request resource.ValidateConfigRequest, response *resource.ValidateConfigResponse) {
+	var data ResourceServerScopeResourceModel
+
+	diags := request.Config.Get(ctx, &data)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() || data.Namespace.IsUnknown() || data.Name.IsUnknown() {
+		return
+	}
+
+	name := scopeName(data.Namespace.ValueString(), data.Name.ValueString())
+	if len(name) > cognitoScopeNameMaxLength {
+		response.Diagnostics.AddAttributeError(
+			path.Root("name"),
+			"Scope name too long",
+			fmt.Sprintf(
+				"The combined scope name %q (from \"namespace.name\") is %d characters, "+
+					"but Cognito allows at most %d.",
+				name, len(name), cognitoScopeNameMaxLength,
+			),
+		)
+	}
 }
 
 func (r ResourceServerScopeResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
