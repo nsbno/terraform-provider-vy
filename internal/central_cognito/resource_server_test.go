@@ -1,6 +1,7 @@
 package central_cognito
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -171,8 +172,8 @@ func TestReadResourceServer_ReturnsErrorWhenServerDoesNotExist(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "could not read resource") {
-		t.Errorf("expected 'could not read resource' in error, got: %v", err)
+	if !errors.Is(err, ErrResourceServerNotFound) {
+		t.Errorf("expected ErrResourceServerNotFound, got: %v", err)
 	}
 }
 
@@ -260,6 +261,155 @@ func TestCreateResourceServer_AcceptsEmptyScopes(t *testing.T) {
 	}
 	if len(result.Scopes) != 0 {
 		t.Errorf("expected empty scopes, got %v", result.Scopes)
+	}
+}
+
+func TestCreateResourceServerScope_AddsScopeToExistingServer(t *testing.T) {
+	api := &FakeCentralCognitoAPI{
+		AppClients: map[string]AppClient{},
+		ResourceServers: map[string]ResourceServer{
+			"https://api.example.com": {
+				Identifier: "https://api.example.com",
+				Name:       "Example API",
+			},
+		},
+	}
+	server, client := api.Start()
+	defer server.Close()
+
+	result, err := client.CreateResourceServerScope(
+		"https://api.example.com",
+		Scope{Name: "read", Description: "Read access"},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Scopes) != 1 {
+		t.Fatalf("expected 1 scope, got %d", len(result.Scopes))
+	}
+
+	var read ResourceServer
+	if err := client.ReadResourceServer("https://api.example.com", &read); err != nil {
+		t.Fatalf("unexpected error reading after create: %v", err)
+	}
+	if len(read.Scopes) != 1 || read.Scopes[0].Name != "read" {
+		t.Errorf("expected scope %q, got %v", "read", read.Scopes)
+	}
+}
+
+func TestCreateResourceServerScope_FailsIfScopeAlreadyExists(t *testing.T) {
+	api := &FakeCentralCognitoAPI{
+		AppClients: map[string]AppClient{},
+		ResourceServers: map[string]ResourceServer{
+			"https://api.example.com": {
+				Identifier: "https://api.example.com",
+				Name:       "Example API",
+				Scopes:     []Scope{{Name: "read", Description: "Read access"}},
+			},
+		},
+	}
+	server, client := api.Start()
+	defer server.Close()
+
+	_, err := client.CreateResourceServerScope(
+		"https://api.example.com",
+		Scope{Name: "read", Description: "Something else"},
+	)
+	if err == nil {
+		t.Fatalf("expected error creating duplicate scope, got nil")
+	}
+}
+
+func TestUpdateResourceServerScope_UpdatesDescriptionOfExistingScope(t *testing.T) {
+	api := &FakeCentralCognitoAPI{
+		AppClients: map[string]AppClient{},
+		ResourceServers: map[string]ResourceServer{
+			"https://api.example.com": {
+				Identifier: "https://api.example.com",
+				Name:       "Example API",
+				Scopes:     []Scope{{Name: "read", Description: "Old description"}},
+			},
+		},
+	}
+	server, client := api.Start()
+	defer server.Close()
+
+	result, err := client.UpdateResourceServerScope(
+		"https://api.example.com",
+		Scope{Name: "read", Description: "New description"},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Scopes) != 1 || result.Scopes[0].Description != "New description" {
+		t.Errorf("expected updated description, got %v", result.Scopes)
+	}
+}
+
+func TestUpdateResourceServerScope_FailsIfScopeDoesNotExist(t *testing.T) {
+	api := &FakeCentralCognitoAPI{
+		AppClients: map[string]AppClient{},
+		ResourceServers: map[string]ResourceServer{
+			"https://api.example.com": {
+				Identifier: "https://api.example.com",
+				Name:       "Example API",
+			},
+		},
+	}
+	server, client := api.Start()
+	defer server.Close()
+
+	_, err := client.UpdateResourceServerScope(
+		"https://api.example.com",
+		Scope{Name: "read", Description: "New description"},
+	)
+	if err == nil {
+		t.Fatalf("expected error updating nonexistent scope, got nil")
+	}
+}
+
+func TestDeleteResourceServerScope_RemovesScopeFromExistingServer(t *testing.T) {
+	api := &FakeCentralCognitoAPI{
+		AppClients: map[string]AppClient{},
+		ResourceServers: map[string]ResourceServer{
+			"https://api.example.com": {
+				Identifier: "https://api.example.com",
+				Name:       "Example API",
+				Scopes: []Scope{
+					{Name: "read", Description: "Read access"},
+					{Name: "write", Description: "Write access"},
+				},
+			},
+		},
+	}
+	server, client := api.Start()
+	defer server.Close()
+
+	result, err := client.DeleteResourceServerScope("https://api.example.com", "read")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Scopes) != 1 || result.Scopes[0].Name != "write" {
+		t.Errorf("expected only %q to remain, got %v", "write", result.Scopes)
+	}
+}
+
+func TestDeleteResourceServerScope_FailsIfScopeDoesNotExist(t *testing.T) {
+	api := &FakeCentralCognitoAPI{
+		AppClients: map[string]AppClient{},
+		ResourceServers: map[string]ResourceServer{
+			"https://api.example.com": {
+				Identifier: "https://api.example.com",
+				Name:       "Example API",
+			},
+		},
+	}
+	server, client := api.Start()
+	defer server.Close()
+
+	_, err := client.DeleteResourceServerScope("https://api.example.com", "read")
+	if err == nil {
+		t.Fatalf("expected error deleting nonexistent scope, got nil")
 	}
 }
 

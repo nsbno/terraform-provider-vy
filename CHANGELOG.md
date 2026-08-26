@@ -3,3 +3,4 @@
 FEATURES:
 * Add resource `vy-resource-server`
 * Add resource `vy-app-client`
+* Add resource `vy-resource-server-scope`

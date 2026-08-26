@@ -12,15 +12,36 @@ A resource server is an integration between a user pool and an API. Each resourc
 ## Example Usage
 
 ```terraform
+data "aws_caller_identity" "current" {}
+
+# Scopes for this resource server are declared in the `scopes` list.
+# Do not use `vy_resource_server_scope` to manage scopes separately.
 resource "vy_resource_server" "this" {
-  identifier = "service.vydev.io"
-  name       = "my service"
+  identifier = "https://services.myteam.vydev.io/incident"
+  name       = "${data.aws_caller_identity.current.account_id}-myteam-incident"
+
   scopes = [
     {
       name        = "read"
-      description = "used for reading"
+      description = "Allows reading incidents"
+    },
+    {
+      name        = "write"
+      description = "Allows creating and updating incidents"
     }
   ]
+}
+
+# Alternatively, manage scopes independently with `vy_resource_server_scope`.
+# Leave `scopes` unset here, and use `ignore_changes` as a safeguard against
+# accidentally setting it later.
+resource "vy_resource_server" "that" {
+  identifier = "https://services.myteam.vydev.io/reports"
+  name       = "${data.aws_caller_identity.current.account_id}-myteam-reports"
+
+  lifecycle {
+    ignore_changes = [scopes]
+  }
 }
 ```
 
@@ -34,7 +55,7 @@ resource "vy_resource_server" "this" {
 
 ### Optional
 
-- `scopes` (Attributes Set) Scopes for this resource server (see [below for nested schema](#nestedatt--scopes))
+- `scopes` (Attributes Set) Scopes for this resource server. Alternatively, manage scopes independently with [`vy_resource_server_scope`](resource_server_scope.md) and leave this unset. If set, it's treated as the full list: anything added out of band will be removed on the next apply, and the two aren't locked against each other. (see [below for nested schema](#nestedatt--scopes))
 
 ### Read-Only
 
@@ -54,5 +75,5 @@ Import is supported using the following syntax:
 
 ```shell
 # Resource servers can be imported using their identifier
-terraform import vy_resource_server.this "service.vydev.io"
+terraform import vy_resource_server.this "https://services.myteam.vydev.io/incident"
 ```
