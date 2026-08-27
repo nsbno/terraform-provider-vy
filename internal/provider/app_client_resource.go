@@ -13,8 +13,32 @@ import (
 	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// idFollowsNameModifier keeps the planned `id` in sync with `name`, since Update() always sets id to name
+var _ planmodifier.String = idFollowsNameModifier{}
+
+type idFollowsNameModifier struct{}
+
+func (m idFollowsNameModifier) Description(ctx context.Context) string {
+	return "the id mirrors the name attribute"
+}
+
+func (m idFollowsNameModifier) MarkdownDescription(ctx context.Context) string {
+	return "the `id` mirrors the `name` attribute"
+}
+
+func (m idFollowsNameModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	var name types.String
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("name"), &name)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.PlanValue = name
+}
 
 var _ validator.String = frontendOrBackendValidator{}
 
@@ -82,7 +106,7 @@ func (r *AppClientResource) Schema(ctx context.Context, request resource.SchemaR
 			"id": schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					idFollowsNameModifier{},
 				},
 			},
 			"name": schema.StringAttribute{
@@ -307,7 +331,7 @@ func (r AppClientResource) Update(ctx context.Context, req resource.UpdateReques
 	var appClient central_cognito.AppClient
 	data.toDomain(&appClient)
 
-	err := r.client.UpdateAppClient(central_cognito.AppClientUpdateRequest{
+	err := r.client.UpdateAppClient(state.Name.ValueString(), central_cognito.AppClientUpdateRequest{
 		Name:         appClient.Name,
 		Scopes:       appClient.Scopes,
 		CallbackUrls: appClient.CallbackUrls,

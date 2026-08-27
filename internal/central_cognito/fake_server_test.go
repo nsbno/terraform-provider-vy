@@ -137,10 +137,19 @@ func (api *FakeCentralCognitoAPI) handleUpdateAppClient(w http.ResponseWriter, r
 		return
 	}
 
+	if req.Name != "" && req.Name != name {
+		if _, exists := api.AppClients[req.Name]; exists {
+			respondWithError(w, http.StatusConflict, fmt.Sprintf("app client %q already exists", req.Name), "CONFLICT")
+			return
+		}
+		delete(api.AppClients, name)
+	}
+
+	existing.Name = req.Name
 	existing.Scopes = req.Scopes
 	existing.CallbackUrls = req.CallbackUrls
 	existing.LogoutUrls = req.LogoutUrls
-	api.AppClients[name] = existing
+	api.AppClients[existing.Name] = existing
 
 	respondWithJSON(w, http.StatusOK, existing)
 }

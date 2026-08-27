@@ -121,7 +121,7 @@ func (c Client) CreateAppClient(server AppClient) (*AppClient, error) {
 	return &createdAppClient, nil
 }
 
-func (c Client) UpdateAppClient(updateRequest AppClientUpdateRequest) error {
+func (c Client) UpdateAppClient(currentName string, updateRequest AppClientUpdateRequest) error {
 	protocol := "https://"
 	if c.HTTPClient != nil {
 		protocol = "http://"
@@ -136,7 +136,7 @@ func (c Client) UpdateAppClient(updateRequest AppClientUpdateRequest) error {
 
 	request, err := http.NewRequest(
 		http.MethodPut,
-		fmt.Sprintf("%s%s/app-clients/%s", protocol, c.BaseUrl, url.QueryEscape(updateRequest.Name)),
+		fmt.Sprintf("%s%s/app-clients/%s", protocol, c.BaseUrl, url.QueryEscape(currentName)),
 		&data,
 	)
 	if err != nil {
