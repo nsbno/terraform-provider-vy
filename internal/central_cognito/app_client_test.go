@@ -105,7 +105,7 @@ func TestUpdateAppClient_UpdatesScopesForExistingClient(t *testing.T) {
 	server, client := api.Start()
 	defer server.Close()
 
-	err := client.UpdateAppClient(AppClientUpdateRequest{
+	err := client.UpdateAppClient("my-app", AppClientUpdateRequest{
 		Name:   "my-app",
 		Scopes: []string{"read", "write"},
 	})
@@ -120,6 +120,44 @@ func TestUpdateAppClient_UpdatesScopesForExistingClient(t *testing.T) {
 	}
 	if len(result.Scopes) != 2 {
 		t.Errorf("expected 2 scopes after update, got %v", result.Scopes)
+	}
+}
+
+func TestUpdateAppClient_RenamesClientAndKeepsItReadableUnderNewName(t *testing.T) {
+	clientID := "cid"
+	api := &FakeCentralCognitoAPI{
+		AppClients: map[string]AppClient{
+			"old-name": {
+				Name:     "old-name",
+				Scopes:   []string{"read"},
+				ClientId: &clientID,
+			},
+		},
+		ResourceServers: map[string]ResourceServer{},
+	}
+	server, client := api.Start()
+	defer server.Close()
+
+	err := client.UpdateAppClient("old-name", AppClientUpdateRequest{
+		Name:   "new-name",
+		Scopes: []string{"read"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result AppClient
+	err = client.ReadAppClient("new-name", &result)
+	if err != nil {
+		t.Fatalf("unexpected error reading renamed app client: %v", err)
+	}
+	if result.Name != "new-name" {
+		t.Errorf("expected Name %q, got %q", "new-name", result.Name)
+	}
+
+	err = client.ReadAppClient("old-name", &result)
+	if err == nil {
+		t.Fatalf("expected error reading app client under old name after rename, got nil")
 	}
 }
 
