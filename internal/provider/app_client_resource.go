@@ -189,10 +189,15 @@ func (c *AppClientResource) Configure(ctx context.Context, request resource.Conf
 
 func (ac AppClientResourceModel) toDomain(domain *central_cognito.AppClient) {
 	domain.Name = ac.Name.ValueString()
-	domain.Scopes = ac.Scopes
 	domain.Type = ac.Type.ValueString()
 
 	// The remote expects it to always be a list.
+	if ac.Scopes == nil {
+		domain.Scopes = []string{}
+	} else {
+		domain.Scopes = ac.Scopes
+	}
+
 	if ac.CallbackUrls == nil {
 		domain.CallbackUrls = []string{}
 	} else {

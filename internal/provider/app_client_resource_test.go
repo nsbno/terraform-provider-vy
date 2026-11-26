@@ -1,9 +1,13 @@
 package provider
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/nsbno/terraform-provider-vy/internal/central_cognito"
 )
 
 const testAccAppClient_ResourceServer = `
@@ -166,4 +170,26 @@ func TestAccAppClient_Complex(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAppClientToDomain_SendsEmptyScopesWhenScopesAreNull(t *testing.T) {
+	model := AppClientResourceModel{
+		Name: types.StringValue("my-app"),
+		Type: types.StringValue("backend"),
+	}
+
+	var domain central_cognito.AppClient
+	model.toDomain(&domain)
+
+	if domain.Scopes == nil {
+		t.Fatalf("expected Scopes to be an empty list, got nil")
+	}
+
+	body, err := json.Marshal(domain)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(string(body), `"scopes":[]`) {
+		t.Errorf("expected scopes to be sent as an empty list, got: %s", body)
+	}
 }
