@@ -306,7 +306,7 @@ func (r AppClientResource) Read(ctx context.Context, req resource.ReadRequest, r
 		diags = diag.Diagnostics{}
 		diags.AddError(
 			"Unable to read app client",
-			fmt.Sprintf("Can't read app client %s from remote: %s ", data.Name.ValueString(), err.Error()),
+			fmt.Sprintf("Can't read app client %s: %s", data.Name.ValueString(), err.Error()),
 		)
 		resp.Diagnostics.Append(diags...)
 		return
@@ -353,7 +353,7 @@ func (r AppClientResource) Update(ctx context.Context, req resource.UpdateReques
 		diags = diag.Diagnostics{}
 		diags.AddError(
 			"Unable to update app client",
-			fmt.Sprintf("Can't update app client %s in remote: %s ", data.Name.ValueString(), err.Error()),
+			fmt.Sprintf("Can't update app client %s: %s", state.Name.ValueString(), err.Error()),
 		)
 		resp.Diagnostics.Append(diags...)
 		return
@@ -378,7 +378,7 @@ func (r AppClientResource) Delete(ctx context.Context, req resource.DeleteReques
 		diags = diag.Diagnostics{}
 		diags.AddError(
 			"Unable to delete app client",
-			fmt.Sprintf("Can't delete app client %s in remote: %s ", data.Name.ValueString(), err.Error()),
+			fmt.Sprintf("Can't delete app client %s: %s", data.Name.ValueString(), err.Error()),
 		)
 		resp.Diagnostics.Append(diags...)
 		return
