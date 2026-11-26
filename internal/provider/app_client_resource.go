@@ -189,10 +189,15 @@ func (c *AppClientResource) Configure(ctx context.Context, request resource.Conf
 
 func (ac AppClientResourceModel) toDomain(domain *central_cognito.AppClient) {
 	domain.Name = ac.Name.ValueString()
-	domain.Scopes = ac.Scopes
 	domain.Type = ac.Type.ValueString()
 
 	// The remote expects it to always be a list.
+	if ac.Scopes == nil {
+		domain.Scopes = []string{}
+	} else {
+		domain.Scopes = ac.Scopes
+	}
+
 	if ac.CallbackUrls == nil {
 		domain.CallbackUrls = []string{}
 	} else {
@@ -211,25 +216,32 @@ func (ac AppClientResourceModel) toDomain(domain *central_cognito.AppClient) {
 	}
 }
 
-func appClientResourceDataFromDomain(domain central_cognito.AppClient, state *AppClientResourceModel) {
+// urlsFromDomain returns the URLs from the remote. The remote returns an empty list both when the
+// attribute is unset and when it is an empty list, so an empty result keeps the form of the prior value:
+// null if it was unset, an empty list if it was an empty list.
+func urlsFromDomain(remote []string, prior []string) []string {
+	if len(remote) > 0 {
+		return remote
+	}
+
+	if prior == nil {
+		return nil
+	}
+
+	return []string{}
+}
+
+// appClientResourceDataFromDomain sets state from the remote app client.
+// prior is the plan or prior state, used to keep empty URL lists as null or empty lists.
+// Pass an empty model when there is no prior value, such as on import.
+func appClientResourceDataFromDomain(domain central_cognito.AppClient, prior AppClientResourceModel, state *AppClientResourceModel) {
 	state.Id = types.StringValue(domain.Name)
 	state.Name = types.StringValue(domain.Name)
 	state.Scopes = domain.Scopes
 	state.Type = types.StringValue(domain.Type)
 
-	// If the config is empty on our side, terraform expects a null, not an empty list.
-	// There is probably a better way to handle this, but I can't find anything in the docs.
-	if len(domain.CallbackUrls) == 0 {
-		state.CallbackUrls = nil
-	} else {
-		state.CallbackUrls = domain.CallbackUrls
-	}
-
-	if len(domain.LogoutUrls) == 0 {
-		state.LogoutUrls = nil
-	} else {
-		state.LogoutUrls = domain.LogoutUrls
-	}
+	state.CallbackUrls = urlsFromDomain(domain.CallbackUrls, prior.CallbackUrls)
+	state.LogoutUrls = urlsFromDomain(domain.LogoutUrls, prior.LogoutUrls)
 
 	if domain.GenerateSecret != nil {
 		state.GenerateSecret = types.BoolValue(*domain.GenerateSecret)
@@ -272,7 +284,7 @@ func (r AppClientResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	var createdAppClientResource AppClientResourceModel
-	appClientResourceDataFromDomain(*createdAppClient, &createdAppClientResource)
+	appClientResourceDataFromDomain(*createdAppClient, data, &createdAppClientResource)
 
 	diags = resp.State.Set(ctx, &createdAppClientResource)
 	resp.Diagnostics.Append(diags...)
@@ -294,14 +306,14 @@ func (r AppClientResource) Read(ctx context.Context, req resource.ReadRequest, r
 		diags = diag.Diagnostics{}
 		diags.AddError(
 			"Unable to read app client",
-			fmt.Sprintf("Can't read app client %s from remote: %s ", data.Name.ValueString(), err.Error()),
+			fmt.Sprintf("Can't read app client %s: %s", data.Name.ValueString(), err.Error()),
 		)
 		resp.Diagnostics.Append(diags...)
 		return
 	}
 
 	var newState AppClientResourceModel
-	appClientResourceDataFromDomain(server, &newState)
+	appClientResourceDataFromDomain(server, data, &newState)
 
 	diags = resp.State.Set(ctx, &newState)
 	resp.Diagnostics.Append(diags...)
@@ -341,7 +353,7 @@ func (r AppClientResource) Update(ctx context.Context, req resource.UpdateReques
 		diags = diag.Diagnostics{}
 		diags.AddError(
 			"Unable to update app client",
-			fmt.Sprintf("Can't update app client %s in remote: %s ", data.Name.ValueString(), err.Error()),
+			fmt.Sprintf("Can't update app client %s: %s", state.Name.ValueString(), err.Error()),
 		)
 		resp.Diagnostics.Append(diags...)
 		return
@@ -366,7 +378,7 @@ func (r AppClientResource) Delete(ctx context.Context, req resource.DeleteReques
 		diags = diag.Diagnostics{}
 		diags.AddError(
 			"Unable to delete app client",
-			fmt.Sprintf("Can't delete app client %s in remote: %s ", data.Name.ValueString(), err.Error()),
+			fmt.Sprintf("Can't delete app client %s: %s", data.Name.ValueString(), err.Error()),
 		)
 		resp.Diagnostics.Append(diags...)
 		return
@@ -399,7 +411,7 @@ func (r AppClientResource) ImportState(ctx context.Context, req resource.ImportS
 	}
 
 	var appClientData AppClientResourceModel
-	appClientResourceDataFromDomain(importedAppClient, &appClientData)
+	appClientResourceDataFromDomain(importedAppClient, AppClientResourceModel{}, &appClientData)
 
 	resp.State.Set(ctx, &appClientData)
 }

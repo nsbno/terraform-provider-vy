@@ -1,6 +1,8 @@
 package central_cognito
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -225,8 +227,8 @@ func TestReadAppClient_ReturnsErrorWhenClientDoesNotExist(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "could not read resource") {
-		t.Errorf("expected 'could not read resource' in error, got: %v", err)
+	if err.Error() != `app client "nonexistent" not found` {
+		t.Errorf("expected the message from the response body, got: %v", err)
 	}
 }
 
@@ -242,8 +244,8 @@ func TestDeleteAppClient_ReturnsErrorWhenClientDoesNotExist(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "could not delete resource") {
-		t.Errorf("expected 'could not delete resource' in error, got: %v", err)
+	if err.Error() != `app client "nonexistent" not found` {
+		t.Errorf("expected the message from the response body, got: %v", err)
 	}
 }
 
@@ -279,8 +281,8 @@ func TestCreateAppClient_ReturnsErrorWhenClientAlreadyExists(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected conflict error, got nil")
 	}
-	if !strings.Contains(err.Error(), "could not create resource") {
-		t.Errorf("expected 'could not create resource' in error, got: %v", err)
+	if err.Error() != `app client "existing" already exists` {
+		t.Errorf("expected the message from the response body, got: %v", err)
 	}
 }
 
@@ -326,5 +328,93 @@ func TestReadAppClient_HandlesUrlEncodedName(t *testing.T) {
 	}
 	if result.Name != "app with spaces" {
 		t.Errorf("expected Name %q, got %q", "app with spaces", result.Name)
+	}
+}
+
+func startAppClientErrorServer(t *testing.T, statusCode int, body string) *Client {
+	t.Helper()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(statusCode)
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(server.Close)
+
+	return &Client{
+		BaseUrl:    strings.TrimPrefix(server.URL, "http://"),
+		HTTPClient: server.Client(),
+	}
+}
+
+func TestAppClient_ErrorMessageFromResponseBody(t *testing.T) {
+	testCases := []struct {
+		name       string
+		statusCode int
+		body       string
+		expected   string
+	}{
+		{
+			name:       "problem details uses detail",
+			statusCode: http.StatusConflict,
+			body:       `{"title":"AppClientAlreadyExistsException","status":409,"detail":"An app client already exists with this name."}`,
+			expected:   "An app client already exists with this name.",
+		},
+		{
+			name:       "message format uses message",
+			statusCode: http.StatusNotFound,
+			body:       `{"message":"App client not found","error_type":"NOT_FOUND"}`,
+			expected:   "App client not found",
+		},
+		{
+			name:       "non-JSON body is returned as is",
+			statusCode: http.StatusBadGateway,
+			body:       "upstream connect error\n",
+			expected:   "upstream connect error",
+		},
+		{
+			name:       "JSON without detail or message is returned as is",
+			statusCode: http.StatusInternalServerError,
+			body:       `{"title":"InternalError","status":500}`,
+			expected:   `{"title":"InternalError","status":500}`,
+		},
+		{
+			name:       "empty body gives the status code",
+			statusCode: http.StatusInternalServerError,
+			body:       "",
+			expected:   "unexpected status code 500",
+		},
+	}
+
+	operations := map[string]func(client *Client) error{
+		"create": func(client *Client) error {
+			_, err := client.CreateAppClient(AppClient{Name: "my-app"})
+			return err
+		},
+		"read": func(client *Client) error {
+			var result AppClient
+			return client.ReadAppClient("my-app", &result)
+		},
+		"update": func(client *Client) error {
+			return client.UpdateAppClient("my-app", AppClientUpdateRequest{Name: "new-name"})
+		},
+		"delete": func(client *Client) error {
+			return client.DeleteAppClient("my-app")
+		},
+	}
+
+	for _, tc := range testCases {
+		for operationName, operation := range operations {
+			t.Run(operationName+"/"+tc.name, func(t *testing.T) {
+				client := startAppClientErrorServer(t, tc.statusCode, tc.body)
+
+				err := operation(client)
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				if err.Error() != tc.expected {
+					t.Errorf("expected error %q, got %q", tc.expected, err.Error())
+				}
+			})
+		}
 	}
 }

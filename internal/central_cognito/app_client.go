@@ -58,9 +58,9 @@ func (c Client) ReadAppClient(name string, server *AppClient) error {
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		str, _ := io.ReadAll(response.Body)
+		body, _ := io.ReadAll(response.Body)
 
-		return errors.New(fmt.Sprintf("could not read resource. %s", str))
+		return errors.New(errorMessageFromResponse(response.StatusCode, body))
 
 	}
 
@@ -107,9 +107,9 @@ func (c Client) CreateAppClient(server AppClient) (*AppClient, error) {
 	if response.StatusCode != 201 {
 		defer response.Body.Close()
 
-		str, _ := io.ReadAll(response.Body)
+		body, _ := io.ReadAll(response.Body)
 
-		return nil, errors.New(fmt.Sprintf("could not create resource. %s", str))
+		return nil, errors.New(errorMessageFromResponse(response.StatusCode, body))
 	}
 
 	var createdAppClient AppClient
@@ -155,9 +155,9 @@ func (c Client) UpdateAppClient(currentName string, updateRequest AppClientUpdat
 	if response.StatusCode != 200 {
 		defer response.Body.Close()
 
-		str, _ := io.ReadAll(response.Body)
+		body, _ := io.ReadAll(response.Body)
 
-		return errors.New(fmt.Sprintf("could not update resource. %s", str))
+		return errors.New(errorMessageFromResponse(response.StatusCode, body))
 	}
 
 	return nil
@@ -191,9 +191,9 @@ func (c Client) DeleteAppClient(name string) error {
 	if response.StatusCode != 200 {
 		defer response.Body.Close()
 
-		str, _ := io.ReadAll(response.Body)
+		body, _ := io.ReadAll(response.Body)
 
-		return errors.New(fmt.Sprintf("could not delete resource. %s", str))
+		return errors.New(errorMessageFromResponse(response.StatusCode, body))
 	}
 
 	return nil
