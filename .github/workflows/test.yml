@@ -2,9 +2,8 @@
 name: Tests
 
 on:
+  # Runs on every pull request, since `Required checks` must report on all of them
   pull_request:
-    paths-ignore:
-      - 'README.md'
   push:
     branches:
       - main
@@ -42,3 +41,56 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
       - run: go mod download
       - run: go test -v -cover ./...
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files aren't formatted with gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+      - run: go vet ./...
+
+  govulncheck:
+    name: Vulnerabilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      # Fails on known vulnerabilities that the code can reach, in the dependencies and the standard library
+      - run: go run golang.org/x/vuln/cmd/govulncheck@v1.10.0 ./...
+
+  required-checks:
+    name: Required checks
+    if: ${{ always() }}
+    needs:
+      - build
+      - test
+      - lint
+      - govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all required jobs succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" != "success" ]; then
+              echo "::error::A required job finished with result '$result'"
+              exit 1
+            fi
+          done
