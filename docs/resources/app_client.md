@@ -78,7 +78,7 @@ resource "vy_app_client" "client" {
 ### Read-Only
 
 - `client_id` (String) The ID used for your client to authenticate itself.
-- `client_secret` (String) A secret used for your client to authenticate itself. Only populated when using the `backend` type.
+- `client_secret` (String, Sensitive) A secret used for your client to authenticate itself. Only populated when using the `backend` type.
 - `id` (String) The ID of this resource.
 
 ## Import

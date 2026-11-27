@@ -158,7 +158,8 @@ func (r *AppClientResource) Schema(ctx context.Context, request resource.SchemaR
 			"client_secret": schema.StringAttribute{
 				MarkdownDescription: "A secret used for your client to authenticate itself. " +
 					"Only populated when using the `backend` type.",
-				Computed: true,
+				Computed:  true,
+				Sensitive: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
