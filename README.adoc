@@ -62,6 +62,15 @@ Use an app client to configure the permitted authentication actions for an app.
 There are two types of app clients: backend and frontend.
 After creating an app client, you can get the client id and client secret (if generated) by using the following outputs:
 `vy_app_client.client.client_id` and `vy_app_client.client.client_secret`.
+The client secret is sensitive, so any output that refers to it must set `sensitive = true`:
+
+----
+output "client_secret" {
+    value     = vy_app_client.client.client_secret
+    sensitive = true
+}
+----
+
 You can store these safely using SSM Parameter Store or Secrets Manager.
 
 ==== Backend App Client
